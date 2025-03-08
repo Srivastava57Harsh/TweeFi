@@ -1,4 +1,4 @@
-import { scraper } from './client';
+import { scraper } from './scraper';
 
 export async function sendTweet(text: string, replyToId?: string) {
   try {

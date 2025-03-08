@@ -4,7 +4,7 @@ import { TransferController } from '../controllers/transfer.controller';
 const router = Router();
 const transferController = new TransferController();
 
-router.post('/transfer', async (req: Request, res: Response) => {
+router.post('/invoke', async (req: Request, res: Response) => {
     await transferController.handleTransfer(req, res);
 });
 
