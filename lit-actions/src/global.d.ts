@@ -1,4 +1,16 @@
 import { ethers as Ethers } from "ethers";
+import {
+  Aptos,
+  Network,
+  AptosConfig,
+  Account,
+  PrivateKey,
+  PrivateKeyVariants,
+  Ed25519PrivateKey,
+  Deserializer,
+  RawTransaction,
+  SimpleTransaction,
+} from "@aptos-labs/ts-sdk";
 
 declare global {
   export declare namespace Lit {
@@ -393,12 +405,34 @@ declare global {
     function getEthereumAddressForPKP(pkp: string): Promise<string>;
     function getEncryptDecryptACL(pkp: string): Promise<object[]>;
   }
+  export type Aptos = typeof Aptos;
+  export const Aptos: typeof Aptos;
+  export type Network = typeof Network;
+  export const Network: typeof Network;
+  export type AptosConfig = typeof AptosConfig;
+  export const AptosConfig: typeof AptosConfig;
+  export type Account = typeof Account;
+  export const Account: typeof Account;
+  export type PrivateKey = typeof PrivateKey;
+  export const PrivateKey: typeof PrivateKey;
+  export type PrivateKeyVariants = typeof PrivateKeyVariants;
+  export const PrivateKeyVariants: typeof PrivateKeyVariants;
+  export type Ed25519PrivateKey = typeof Ed25519PrivateKey;
+  export const Ed25519PrivateKey: typeof Ed25519PrivateKey;
+  export type Deserializer = typeof Deserializer;
+  export const Deserializer: typeof Deserializer;
+  export type RawTransaction = typeof RawTransaction;
+  export const RawTransaction: typeof RawTransaction;
+  export type SimpleTransaction = typeof SimpleTransaction;
+  export const SimpleTransaction: typeof SimpleTransaction;
 
   // TODO: JSParams go here
   const helloName: string;
   const publicKey: string;
   const toSign: Uint8Array;
   const sigName: string;
+  const method: string;
+  const ipfsCID: string;
 
   // encrypt-action
   const toEncrypt: string;

@@ -15,6 +15,15 @@ import path, { resolve } from "path";
 import { keccak256, getBytes, toUtf8Bytes } from "ethers";
 import { TwitterService } from "./twitter.service.js";
 import { NgrokService } from "./ngrok.service.js";
+import {
+  AccountAuthenticator,
+  Aptos,
+  AptosConfig,
+  Deserializer,
+  Ed25519PublicKey,
+  Network,
+  SimpleTransaction,
+} from "@aptos-labs/ts-sdk";
 
 // hack to avoid 400 errors sending params back to telegram. not even close to perfect
 const htmlEscape = (_key: AnyType, val: AnyType) => {
@@ -217,9 +226,10 @@ You can view the token page below (it takes a few minutes to be visible)`,
           ctx.reply("Failed to mint token");
         }
       });
+
       this.bot.command("lit", async (ctx) => {
         try {
-          const action = ctx.match;
+          const action = ctx.match.split(" ")[0];
           console.log("action:", action);
           const actionHashes = JSON.parse(
             (
@@ -245,6 +255,8 @@ You can view the token page below (it takes a few minutes to be visible)`,
           }
           // ! NOTE: You can send any jsParams you want here, it depends on your Lit action code
           let jsParams;
+          let transaction: SimpleTransaction;
+          let aptosMethod: string;
           // ! NOTE: You can change the chainId to any chain you want to execute the action on
           const chainId = 8453;
           switch (action) {
@@ -291,6 +303,60 @@ You can view the token page below (it takes a few minutes to be visible)`,
               };
               break;
             }
+            case "aptos-accounts": {
+              aptosMethod = ctx.message?.text?.split(" ")[2] ?? "createAccount";
+              const messageToSign =
+                ctx.from?.username ?? ctx.from?.first_name ?? "";
+              if (aptosMethod === "createAccount") {
+                jsParams = {
+                  method: aptosMethod,
+                  ipfsCID: actionHash.IpfsHash,
+                };
+              } else if (aptosMethod === "signTransaction") {
+                const config = new AptosConfig({ network: Network.TESTNET });
+                const aptos = new Aptos(config);
+                transaction = await aptos.transaction.build.simple({
+                  sender:
+                    "0x0eee7b6daea7801baa6c144bb99ab79c2fcd75ce4014f822372c9d0c925673a0",
+                  data: {
+                    function: "0x1::aptos_account::transfer",
+                    functionArguments: [
+                      "0x252905ac58960968895d53d5c11d27f520d1609ab2db95f2e68daea52ad246c9",
+                      100,
+                    ],
+                  },
+                });
+                const txToSign = transaction.rawTransaction.bcsToBytes();
+                jsParams = {
+                  method: aptosMethod,
+                  ipfsCID: actionHash.IpfsHash,
+                  ciphertext:
+                    "oTXmYzNr0Wu6VSOT10DKtDjGcUYMmedO47WZ8Y7Ff2+cQqw4y01oYP6VIWtan1QtY5ZWRaOap055BNnFH42ZY+nBj3Nascy3yoraYYHxfRdDedoWzTEgsVuw6+9CiVuFHWsWgMjnG5NAsoX69bwfqwqXlpa/Rn5AQp8Eeq6aM7rGVGfAagDgfpk6Wwhy8l4QF9I8oAI=",
+                  dataToEncryptHash:
+                    "42d8402d7fe88fdcdb5a8ce47d5f98fb74f9affeb20daa16d0c1bc45218e5910",
+                  accountAddress:
+                    "0x0eee7b6daea7801baa6c144bb99ab79c2fcd75ce4014f822372c9d0c925673a0",
+                  publicKey:
+                    "0x8803f0e2bf400ffe2a253f701a7d39eae95a02e3b5ec316f0aa73bb1efb2f66b",
+                  toSign: Array.from(txToSign),
+                };
+              } else {
+                jsParams = {
+                  method: aptosMethod,
+                  ipfsCID: actionHash.IpfsHash,
+                  ciphertext:
+                    "oTXmYzNr0Wu6VSOT10DKtDjGcUYMmedO47WZ8Y7Ff2+cQqw4y01oYP6VIWtan1QtY5ZWRaOap055BNnFH42ZY+nBj3Nascy3yoraYYHxfRdDedoWzTEgsVuw6+9CiVuFHWsWgMjnG5NAsoX69bwfqwqXlpa/Rn5AQp8Eeq6aM7rGVGfAagDgfpk6Wwhy8l4QF9I8oAI=",
+                  dataToEncryptHash:
+                    "42d8402d7fe88fdcdb5a8ce47d5f98fb74f9affeb20daa16d0c1bc45218e5910",
+                  accountAddress:
+                    "0x0eee7b6daea7801baa6c144bb99ab79c2fcd75ce4014f822372c9d0c925673a0",
+                  publicKey:
+                    "0x8803f0e2bf400ffe2a253f701a7d39eae95a02e3b5ec316f0aa73bb1efb2f66b",
+                  toSign: Array.from(new TextEncoder().encode(messageToSign)),
+                };
+              }
+              break;
+            }
             default: {
               // they typed something random or a dev forgot to update this list
               ctx.reply(`Action not handled: ${action}`);
@@ -334,6 +400,45 @@ You can view the token page below (it takes a few minutes to be visible)`,
               parse_mode: "HTML",
             }
           );
+          //@ts-expect-error aptosMethod is defined
+          if (aptosMethod === "signTransaction" && transaction != null) {
+            const config = new AptosConfig({ network: Network.TESTNET });
+            const aptos = new Aptos(config);
+            const response = JSON.parse(data?.response?.response);
+            console.log("response: %O", response);
+            const sig = new Deserializer(
+              new Uint8Array(Buffer.from(response.signature.slice(2), "hex"))
+            );
+            console.log("sig: %O", sig);
+            const pub = new Ed25519PublicKey(jsParams?.publicKey ?? "");
+            console.log("pub: %O", pub);
+
+            const senderAuthenticator = AccountAuthenticator.deserialize(sig);
+            console.log("senderAuthenticator: %O", senderAuthenticator);
+            const pendingTransaction = await aptos.transaction.submit.simple({
+              transaction: transaction,
+              senderAuthenticator: senderAuthenticator,
+            });
+            console.log("pendingTransaction: %O", pendingTransaction);
+            await ctx.reply(
+              `Transaction submitted successfully:\n` +
+                `Transaction Hash: <code>${pendingTransaction.hash}</code>\n`,
+              {
+                parse_mode: "HTML",
+              }
+            );
+            const committedTransaction = await aptos.waitForTransaction({
+              transactionHash: pendingTransaction.hash,
+            });
+            console.log("committedTransaction: %O", committedTransaction);
+            await ctx.reply(
+              `Transaction committed successfully:\n` +
+                `Transaction Hash: <code>${committedTransaction.hash}</code>\n`,
+              {
+                parse_mode: "HTML",
+              }
+            );
+          }
         } catch (error) {
           if (isAxiosError(error)) {
             console.error(
@@ -344,7 +449,7 @@ You can view the token page below (it takes a few minutes to be visible)`,
               "Failed to execute Lit action" +
                 `\n\nError: <pre lang="json"><code>${JSON.stringify(
                   error.response?.data,
-                  null,
+                  htmlEscape,
                   2
                 )}</code></pre>`,
               {
