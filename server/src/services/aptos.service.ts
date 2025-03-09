@@ -13,8 +13,19 @@ import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage } from "@langchain/core/messages";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
 // import { MemorySaver } from "@langchain/langgraph";
+import { resolve } from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
 import dotenv from "dotenv";
-dotenv.config();
+// Convert ESM module URL to filesystem path
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load environment variables from root .env file
+dotenv.config({
+  path: resolve(__dirname, "../../../.env"),
+});
 
 export class AptosService {
   private aptos: Aptos;
