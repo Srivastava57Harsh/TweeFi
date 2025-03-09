@@ -13,6 +13,7 @@
     "watch": "node bin/build-dev"
   },
   "dependencies": {
+    "@aptos-labs/ts-sdk": "^1.35.0",
     "buffer": "^6.0.3",
     "dotenv": "^16.4.5",
     "esbuild": "^0.24.2",
