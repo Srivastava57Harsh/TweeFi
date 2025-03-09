@@ -2,10 +2,20 @@ import { Scraper } from "agent-twitter-client";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
+import { fileURLToPath } from "url";
 
 dotenv.config();
 
-const COOKIES_PATH = path.join(__dirname, "..", "..", "twitter-cookies.json");
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const COOKIES_PATH = path.join(
+  __dirname,
+  "..",
+  "..",
+  "..",
+  "twitter-cookies.json"
+);
 
 export const scraper = new Scraper();
 
@@ -17,7 +27,9 @@ export const initializeScraper = async () => {
     // First try to authenticate with stored cookies from file
     if (fs.existsSync(COOKIES_PATH)) {
       try {
-        const storedCookies = JSON.parse(fs.readFileSync(COOKIES_PATH, 'utf-8')).cookies;
+        const storedCookies = JSON.parse(
+          fs.readFileSync(COOKIES_PATH, "utf-8")
+        ).cookies;
         await scraper.setCookies(storedCookies);
         const isLoggedIn = await scraper.isLoggedIn();
         if (isLoggedIn) {
@@ -25,7 +37,9 @@ export const initializeScraper = async () => {
           return;
         }
       } catch (error) {
-        console.warn(" Failed to authenticate with stored cookies, falling back to credentials");
+        console.warn(
+          " Failed to authenticate with stored cookies, falling back to credentials"
+        );
       }
     }
 
@@ -38,20 +52,28 @@ export const initializeScraper = async () => {
       throw new Error("Twitter credentials not found in environment variables");
     }
 
-    await scraper.login(username, password, email, undefined,process.env.TWITTER_APP_KEY,
+    await scraper.login(
+      username,
+      password,
+      email,
+      undefined,
+      process.env.TWITTER_APP_KEY,
       process.env.TWITTER_APP_SECRET,
       process.env.TWITTER_COOKIES,
-      process.env.TWITTER_CT0);
+      process.env.TWITTER_CT0
+    );
     console.log(" Successfully logged in with credentials");
 
     // Store cookies in file for future use
     const newCookies = await scraper.getCookies();
     console.log(" Saving cookies to file for future use");
-    fs.writeFileSync(COOKIES_PATH, JSON.stringify({ 
-      cookies: newCookies.map(cookie => cookie.toString()) 
-    }));
+    fs.writeFileSync(
+      COOKIES_PATH,
+      JSON.stringify({
+        cookies: newCookies.map((cookie) => cookie.toString()),
+      })
+    );
     console.log(` Cookies saved to: ${COOKIES_PATH}`);
-
   } catch (error) {
     console.error(" Twitter client initialization failed:", error);
     throw error;
@@ -61,7 +83,7 @@ export const initializeScraper = async () => {
 // Send a tweet
 export const sendTweet = async (text: string, replyToId?: string) => {
   try {
-    console.log(` Sending tweet${replyToId ? ' as reply' : ''}...`);
+    console.log(` Sending tweet${replyToId ? " as reply" : ""}...`);
     const result = await scraper.sendTweet(text, replyToId);
     console.log(" Tweet sent successfully");
     return result;

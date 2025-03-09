@@ -1,10 +1,10 @@
-import { Job } from 'bullmq';
-import { scraper } from '../twitter/scraper';
-import { getAIRecommendation } from '../twitter/ai';
+import { Job } from "bullmq";
+import { scraper } from "../twitter/scraper.js";
+import { getAIRecommendation } from "../twitter/ai.js";
 
 export async function processMention(job: Job) {
   const { username, text, id } = job.data;
-  
+
   try {
     console.log(`
 🎯 Processing mention:
@@ -16,11 +16,11 @@ export async function processMention(job: Job) {
     // Check if logged in before proceeding
     const isLoggedIn = await scraper.isLoggedIn();
     if (!isLoggedIn) {
-      throw new Error('Twitter client not logged in');
+      throw new Error("Twitter client not logged in");
     }
 
     // Get AI recommendation
-    const recommendation = await getAIRecommendation(text, id);
+    const recommendation = await getAIRecommendation(text);
     console.log(`💡 Generated response: ${recommendation}`);
 
     // Send reply tweet

@@ -2,6 +2,8 @@ import express, { NextFunction, Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import helloRouter from "./routes/hello.js";
+import moveAgentRouter from "./routes/moveagent.routes.js";
+import tweetRouter from "./routes/tweet.routes.js";
 import { resolve } from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
@@ -14,6 +16,9 @@ import cookieParser from "cookie-parser";
 import githubRouter from "./routes/github.js";
 import { AnyType } from "./utils.js";
 import { isHttpError } from "http-errors";
+import { startMentionMonitor } from "./services/twitter/monitor.js";
+import { initializeScraper } from "./services/twitter/scraper.js";
+import { initializeWorkers } from "./services/queue/index.js";
 
 // Convert ESM module URL to filesystem path
 const __filename = fileURLToPath(import.meta.url);
@@ -40,6 +45,12 @@ app.use(cookieParser());
 
 // Mount hello world test route
 app.use("/hello", helloRouter);
+
+// Mount Aptos transfer routes
+app.use("/api", moveAgentRouter);
+
+// Mount tweet routes
+app.use("/api", tweetRouter);
 
 // Initialize Telegram bot service
 const telegramService = TelegramService.getInstance();
@@ -84,6 +95,12 @@ app.listen(port, async () => {
   try {
     console.log(`Server running on PORT: ${port}`);
     console.log("Server Environment:", process.env.NODE_ENV);
+
+    // Initialize Twitter services
+    await initializeScraper();
+    initializeWorkers();
+    startMentionMonitor();
+    console.log("Twitter services initialized");
 
     // Start ngrok tunnel for development
     const ngrokService = NgrokService.getInstance();

@@ -1,6 +1,6 @@
-import { scraper } from './scraper';
+import { scraper } from "./scraper.js";
 import { SearchMode } from "agent-twitter-client";
-import { queueMention } from '../queue';
+import { queueMention } from "../queue/index.js";
 
 let lastProcessedTweetTime = new Date();
 
@@ -10,13 +10,17 @@ async function checkMentions(): Promise<void> {
     const query = `@${process.env.TWITTER_USERNAME}`;
     const maxMentions = 20;
 
-    for await (const tweet of scraper.searchTweets(query, maxMentions, SearchMode.Latest)) {
+    for await (const tweet of scraper.searchTweets(
+      query,
+      maxMentions,
+      SearchMode.Latest
+    )) {
       // Skip our own tweets
       if (tweet.username === process.env.TWITTER_USERNAME) {
         console.log(`⏩ Skipping own tweet from @${tweet.username}`);
         continue;
       }
-      
+
       // Skip tweets without required data
       if (!tweet.id || !tweet.text || !tweet.username) {
         console.log("⚠️ Skipping tweet with missing data");
@@ -24,11 +28,12 @@ async function checkMentions(): Promise<void> {
       }
 
       const timestamp = Number(tweet.timestamp) * 1000; // Convert seconds to milliseconds
-
-const tweetTime = new Date(timestamp);
+      const tweetTime = new Date(timestamp);
 
       if (tweetTime <= lastProcessedTweetTime) {
-        console.log(`⏩ Skipping already processed tweet from @${tweet.username}`);
+        console.log(
+          `⏩ Skipping already processed tweet from @${tweet.username}`
+        );
         continue;
       }
 
@@ -51,7 +56,9 @@ const tweetTime = new Date(timestamp);
 
     // Update the last processed time
     lastProcessedTweetTime = new Date();
-    console.log(`⏱️ Updated last processed time to: ${lastProcessedTweetTime.toISOString()}`);
+    console.log(
+      `⏱️ Updated last processed time to: ${lastProcessedTweetTime.toISOString()}`
+    );
   } catch (error) {
     console.error("❌ Error checking mentions:", error);
   }

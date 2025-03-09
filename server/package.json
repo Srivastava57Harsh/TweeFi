@@ -1,5 +1,5 @@
 {
-  "name": "server",
+  "name": "@hag-bot/server",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -18,13 +18,18 @@
     "@ai16z/adapter-sqlite": "0.1.5-alpha.3",
     "@ai16z/eliza": "0.1.5-alpha.3",
     "@ai16z/plugin-bootstrap": "0.1.5-alpha.3",
+    "@aptos-labs/ts-sdk": "^1.35.0",
     "@grammyjs/conversations": "^1.2.0",
+    "@langchain/core": "^0.3.42",
+    "@langchain/langgraph": "^0.2.54",
+    "@langchain/openai": "^0.4.4",
     "@ngrok/ngrok": "^1.4.1",
     "@solana/web3.js": "^1.98.0",
     "agent-twitter-client": "^0.0.18",
     "@useorbis/db-sdk": "0.0.60-alpha",
     "axios": "^1.7.7",
     "better-sqlite3": "^11.6.0",
+    "bullmq": "^5.41.7",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
@@ -33,6 +38,7 @@
     "grammy": "^1.32.0",
     "http-errors": "^2.0.0",
     "jsonc-parser": "^3.3.1",
+    "move-agent-kit": "^0.2.0",
     "node-cache": "^5.1.2",
     "prettier": "^3.4.2",
     "tsc-watch": "^6.2.1"
@@ -51,6 +57,8 @@
     "@typescript-eslint/eslint-plugin": "^7.3.1",
     "@typescript-eslint/parser": "^7.3.1",
     "eslint": "^8",
+    "nodemon": "^3.1.9",
+    "ts-node": "^10.9.2",
     "typechain": "^8.3.2",
     "typescript": "^5"
   }
