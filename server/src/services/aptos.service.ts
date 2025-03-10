@@ -10,6 +10,7 @@ import {
   AnyRawTransaction,
   AccountAuthenticator,
   Deserializer,
+  RawTransaction,
 } from "@aptos-labs/ts-sdk";
 import { LocalSigner, BaseSigner } from "move-agent-kit";
 // import { VerifySignatureArgs } from "@aptos-labs/ts-sdk";
@@ -102,7 +103,17 @@ export class LitAptosSigner extends BaseSigner {
     transaction: AnyRawTransaction
   ): Promise<SignedTransactionResponse> {
     console.log("[LitAptosSigner] signTransaction: %O", transaction);
-    const tx = transaction.rawTransaction.bcsToBytes();
+    const rawTx = transaction.rawTransaction;
+    const newTx = new RawTransaction(
+      rawTx.sender,
+      rawTx.sequence_number,
+      rawTx.payload,
+      rawTx.max_gas_amount,
+      rawTx.gas_unit_price,
+      BigInt(Math.floor(Date.now() / 1000) + 5 * 60), // 5 minutes from now
+      rawTx.chain_id
+    );
+    const tx = newTx.bcsToBytes();
     console.log("[LitAptosSigner] tx: %O", tx);
     const jsParams = {
       method: "signTransaction",
