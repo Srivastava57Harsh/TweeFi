@@ -1,11 +1,17 @@
 import {
+  Account,
   Aptos,
+  AptosConfig,
   Ed25519PrivateKey,
   Network,
   PrivateKey,
   PrivateKeyVariants,
+  AccountAddress,
+  AnyRawTransaction,
+  AccountAuthenticator,
+  Deserializer,
 } from "@aptos-labs/ts-sdk";
-import { LocalSigner } from "move-agent-kit";
+import { LocalSigner, BaseSigner } from "move-agent-kit";
 // import { VerifySignatureArgs } from "@aptos-labs/ts-sdk";
 import { AgentRuntime, createAptosTools } from "move-agent-kit";
 import { aptosConfig } from "../config/aptos.config.js";
@@ -26,6 +32,163 @@ const __dirname = dirname(__filename);
 dotenv.config({
   path: resolve(__dirname, "../../../.env"),
 });
+import axios, { AxiosInstance } from "axios";
+import { getCollablandApiUrl } from "../utils.js";
+
+export type SignedTransactionResponse = {
+  senderAuthenticator: AccountAuthenticator;
+  signature?: Uint8Array<ArrayBufferLike>;
+};
+
+export class LitAptosSigner extends BaseSigner {
+  private readonly _aptosClient: Aptos;
+  private readonly _aptosAddress: string;
+  private readonly _aptosPublicKey: string;
+  private readonly _litCiphertext: string;
+  private readonly _litDataToEncryptHash: string;
+  private readonly _litIpfsHash: string;
+  private readonly _axiosClient: AxiosInstance;
+  /**
+   * Initializes a new instance of the LitAptosSigner class. Uses Lit protocol to sign transactions on Aptos.
+   * @param accountAddress - The account address of the signer
+   * @param accountPublicKey - The public key of the signer
+   * @param network - The Aptos network to connect to
+   * @param ipfsHash - The IPFS hash of the Lit action
+   * @param ciphertext - The encrypted data of the private key (for Lit protocol)
+   * @param dataToEncryptHash - The hash of the data to encrypted data of the private key (for Lit protocol)
+   */
+  constructor(
+    accountAddress: string,
+    accountPublicKey: string,
+    network: Network,
+    ipfsHash: string,
+    ciphertext: string,
+    dataToEncryptHash: string
+  ) {
+    const config = new AptosConfig({ network });
+    const client = new Aptos(config);
+    const account = Account.generate(); // passing a random account, but won't be used
+    super(account, client);
+    this._aptosClient = client;
+    this._aptosAddress = accountAddress;
+    this._aptosPublicKey = accountPublicKey;
+    this._litCiphertext = ciphertext;
+    this._litDataToEncryptHash = dataToEncryptHash;
+    this._litIpfsHash = ipfsHash;
+    this._axiosClient = axios.create({
+      baseURL: getCollablandApiUrl(),
+      headers: {
+        "X-API-KEY": process.env.COLLABLAND_API_KEY || "",
+        "X-TG-BOT-TOKEN": process.env.TELEGRAM_BOT_TOKEN || "",
+        "Content-Type": "application/json",
+      },
+      timeout: 5 * 60 * 1000,
+    });
+    console.log("[LitAptosSigner] initialized:");
+    console.dir({
+      _aptosAddress: this._aptosAddress,
+      _litCiphertext: this._litCiphertext,
+      _litDataToEncryptHash: this._litDataToEncryptHash,
+      _litIpfsHash: this._litIpfsHash,
+    });
+  }
+  getAddress(): AccountAddress {
+    console.log("[LitAptosSigner] getAddress: %O", this._aptosAddress);
+    return new AccountAddress(
+      new Uint8Array(Buffer.from(this._aptosAddress.slice(2), "hex"))
+    );
+  }
+  async signTransaction(
+    transaction: AnyRawTransaction
+  ): Promise<SignedTransactionResponse> {
+    console.log("[LitAptosSigner] signTransaction: %O", transaction);
+    const tx = transaction.rawTransaction.bcsToBytes();
+    console.log("[LitAptosSigner] tx: %O", tx);
+    const jsParams = {
+      method: "signTransaction",
+      ipfsCID: this._litIpfsHash,
+      ciphertext: this._litCiphertext,
+      dataToEncryptHash: this._litDataToEncryptHash,
+      accountAddress: this._aptosAddress,
+      publicKey: this._aptosPublicKey,
+      toSign: Array.from(tx),
+    };
+    console.log("[LitAptosSigner] jsParams: %O", jsParams);
+    try {
+      const chainId = 8453; // does not matter here, but is an API constraint
+      const { data } = await this._axiosClient.post(
+        `/telegrambot/executeLitActionUsingPKP?chainId=${chainId}`,
+        {
+          actionIpfs: this._litIpfsHash,
+          actionJsParams: jsParams,
+        }
+      );
+      const response = JSON.parse(data?.response?.response);
+      console.log("[LitAptosSigner] response: %O", response);
+      const sig = new Deserializer(
+        new Uint8Array(Buffer.from(response.signature.slice(2), "hex"))
+      );
+      console.log("[LitAptosSigner] sig: %O", sig);
+      const senderAuthenticator = AccountAuthenticator.deserialize(sig);
+      console.log(
+        "[LitAptosSigner] senderAuthenticator: %O",
+        senderAuthenticator
+      );
+      return {
+        senderAuthenticator,
+      };
+    } catch (error) {
+      console.error("[LitAptosSigner] Failed to sign transaction:", error);
+      throw error;
+    }
+  }
+
+  async sendTransaction(transaction: AnyRawTransaction) {
+    console.log("[LitAptosSigner] sendTransaction: %O", transaction);
+    const signedTx = await this.signTransaction(transaction);
+
+    const submittedTx = await this._aptosClient.transaction.submit.simple({
+      transaction,
+      senderAuthenticator: signedTx.senderAuthenticator,
+    });
+    console.log("[LitAptosSigner] submittedTx: %O", submittedTx);
+    const result = await this._aptosClient.waitForTransaction({
+      transactionHash: submittedTx.hash,
+    });
+    console.log("[LitAptosSigner] result: %O", result);
+    return result.hash;
+  }
+
+  async signMessage(message: string): Promise<string> {
+    console.log("[LitAptosSigner] signMessage: %O", message);
+    const jsParams = {
+      method: "signMessage",
+      ipfsCID: this._litIpfsHash,
+      ciphertext: this._litCiphertext,
+      dataToEncryptHash: this._litDataToEncryptHash,
+      accountAddress: this._aptosAddress,
+      publicKey: this._aptosPublicKey,
+      toSign: Array.from(new TextEncoder().encode(message)),
+    };
+    console.log("[LitAptosSigner] jsParams: %O", jsParams);
+    try {
+      const chainId = 8453; // does not matter here, but is an API constraint
+      const { data } = await this._axiosClient.post(
+        `/telegrambot/executeLitActionUsingPKP?chainId=${chainId}`,
+        {
+          actionIpfs: this._litIpfsHash,
+          actionJsParams: jsParams,
+        }
+      );
+      const response = JSON.parse(data?.response?.response);
+      console.log("[LitAptosSigner] response: %O", response);
+      return response.signature;
+    } catch (error) {
+      console.error("[LitAptosSigner] Failed to sign message:", error);
+      throw error;
+    }
+  }
+}
 
 export class AptosService {
   private aptos: Aptos;

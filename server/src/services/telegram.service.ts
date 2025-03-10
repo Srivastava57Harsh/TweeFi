@@ -21,9 +21,12 @@ import {
   AptosConfig,
   Deserializer,
   Ed25519PublicKey,
+  Ed25519Signature,
   Network,
   SimpleTransaction,
+  VerifySignatureArgs,
 } from "@aptos-labs/ts-sdk";
+import { LitAptosSigner } from "./aptos.service.js";
 
 // hack to avoid 400 errors sending params back to telegram. not even close to perfect
 const htmlEscape = (_key: AnyType, val: AnyType) => {
@@ -99,6 +102,7 @@ export class TelegramService extends BaseService {
         { command: "mint", description: "Mint a token on Wow.xyz" },
         { command: "eliza", description: "Talk to the AI agent" },
         { command: "lit", description: "Execute a Lit action" },
+        { command: "aptos", description: "Execute an Aptos action" },
       ]);
       // all command handlers can be registered here
       this.bot.command("start", (ctx) => ctx.reply("Hello!"));
@@ -470,6 +474,61 @@ You can view the token page below (it takes a few minutes to be visible)`,
               }
             );
           }
+        }
+      });
+      this.bot.command("aptos", async (ctx) => {
+        //FIXME: Hard-coding the values to test
+        const ipfsCID = "QmSKuJA2zgjzE3MX5Eft5uKBwZMUpATrDdZXjjkSdqJSbS";
+        const ciphertext =
+          "oTXmYzNr0Wu6VSOT10DKtDjGcUYMmedO47WZ8Y7Ff2+cQqw4y01oYP6VIWtan1QtY5ZWRaOap055BNnFH42ZY+nBj3Nascy3yoraYYHxfRdDedoWzTEgsVuw6+9CiVuFHWsWgMjnG5NAsoX69bwfqwqXlpa/Rn5AQp8Eeq6aM7rGVGfAagDgfpk6Wwhy8l4QF9I8oAI=";
+        const dataToEncryptHash =
+          "42d8402d7fe88fdcdb5a8ce47d5f98fb74f9affeb20daa16d0c1bc45218e5910";
+        const accountAddress =
+          "0x0eee7b6daea7801baa6c144bb99ab79c2fcd75ce4014f822372c9d0c925673a0";
+        const publicKey =
+          "0x8803f0e2bf400ffe2a253f701a7d39eae95a02e3b5ec316f0aa73bb1efb2f66b";
+        const signer = new LitAptosSigner(
+          accountAddress,
+          publicKey,
+          Network.TESTNET,
+          ipfsCID,
+          ciphertext,
+          dataToEncryptHash
+        );
+        const action = ctx.message?.text?.split(" ")[1];
+        if (action === "signMessage") {
+          const message = "Hello, Aptos!";
+          await ctx.reply(`Signing message: ${message}`);
+          const signature = await signer.signMessage(message);
+          await ctx.reply(`Signature: ${signature}`);
+          const pub = new Ed25519PublicKey(publicKey);
+          const args: VerifySignatureArgs = {
+            signature: new Ed25519Signature(signature),
+            message: new TextEncoder().encode(message),
+          };
+          const result = await pub.verifySignature(args);
+          await ctx.reply(`Verification result: ${result}`);
+          console.log("result: %O", result);
+        } else if (action === "signTransaction") {
+          const aptos = new Aptos(
+            new AptosConfig({ network: Network.TESTNET })
+          );
+          const transaction = await aptos.transaction.build.simple({
+            sender: accountAddress,
+            data: {
+              function: "0x1::aptos_account::transfer",
+              functionArguments: [
+                "0x252905ac58960968895d53d5c11d27f520d1609ab2db95f2e68daea52ad246c9",
+                100,
+              ],
+            },
+          });
+          const txToSign = transaction.rawTransaction.bcsToBytes();
+          await ctx.reply(`Transaction to sign: ${txToSign}`);
+          const txHash = await signer.sendTransaction(transaction);
+          await ctx.reply(`TX Hash: ${txHash}`);
+        } else {
+          await ctx.reply(`Action not handled: ${action}`);
         }
       });
     } catch (error) {
