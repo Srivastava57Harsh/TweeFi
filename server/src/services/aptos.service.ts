@@ -11,6 +11,7 @@ import {
   AccountAuthenticator,
   Deserializer,
   RawTransaction,
+  SimpleTransaction,
 } from "@aptos-labs/ts-sdk";
 import { LocalSigner, BaseSigner } from "move-agent-kit";
 // import { VerifySignatureArgs } from "@aptos-labs/ts-sdk";
@@ -103,17 +104,7 @@ export class LitAptosSigner extends BaseSigner {
     transaction: AnyRawTransaction
   ): Promise<SignedTransactionResponse> {
     console.log("[LitAptosSigner] signTransaction: %O", transaction);
-    const rawTx = transaction.rawTransaction;
-    const newTx = new RawTransaction(
-      rawTx.sender,
-      rawTx.sequence_number,
-      rawTx.payload,
-      rawTx.max_gas_amount,
-      rawTx.gas_unit_price,
-      BigInt(Math.floor(Date.now() / 1000) + 5 * 60), // 5 minutes from now
-      rawTx.chain_id
-    );
-    const tx = newTx.bcsToBytes();
+    const tx = transaction.rawTransaction.bcsToBytes();
     console.log("[LitAptosSigner] tx: %O", tx);
     const jsParams = {
       method: "signTransaction",
@@ -156,10 +147,22 @@ export class LitAptosSigner extends BaseSigner {
 
   async sendTransaction(transaction: AnyRawTransaction) {
     console.log("[LitAptosSigner] sendTransaction: %O", transaction);
-    const signedTx = await this.signTransaction(transaction);
+    const rawTx = transaction.rawTransaction;
+    const newTx = new SimpleTransaction(
+      new RawTransaction(
+        rawTx.sender,
+        rawTx.sequence_number,
+        rawTx.payload,
+        rawTx.max_gas_amount,
+        rawTx.gas_unit_price,
+        BigInt(Math.floor(Date.now() / 1000) + 5 * 60), // 5 minutes from now
+        rawTx.chain_id
+      )
+    );
+    const signedTx = await this.signTransaction(newTx);
 
     const submittedTx = await this._aptosClient.transaction.submit.simple({
-      transaction,
+      transaction: newTx,
       senderAuthenticator: signedTx.senderAuthenticator,
     });
     console.log("[LitAptosSigner] submittedTx: %O", submittedTx);
