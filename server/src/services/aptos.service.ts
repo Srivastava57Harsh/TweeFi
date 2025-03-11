@@ -2,10 +2,10 @@ import {
   Account,
   Aptos,
   AptosConfig,
-  Ed25519PrivateKey,
+  // Ed25519PrivateKey,
   Network,
-  PrivateKey,
-  PrivateKeyVariants,
+  // PrivateKey,
+  // PrivateKeyVariants,
   AccountAddress,
   AnyRawTransaction,
   AccountAuthenticator,
@@ -13,7 +13,10 @@ import {
   RawTransaction,
   SimpleTransaction,
 } from "@aptos-labs/ts-sdk";
-import { LocalSigner, BaseSigner } from "move-agent-kit";
+import {
+  // LocalSigner,
+  BaseSigner,
+} from "move-agent-kit";
 // import { VerifySignatureArgs } from "@aptos-labs/ts-sdk";
 import { AgentRuntime, createAptosTools } from "move-agent-kit";
 import { aptosConfig } from "../config/aptos.config.js";
@@ -217,18 +220,35 @@ export class AptosService {
   private async initialize() {
     try {
       console.log("Initializing Aptos service...");
+      const ipfsCID = "QmSKuJA2zgjzE3MX5Eft5uKBwZMUpATrDdZXjjkSdqJSbS";
+      const ciphertext =
+        "oTXmYzNr0Wu6VSOT10DKtDjGcUYMmedO47WZ8Y7Ff2+cQqw4y01oYP6VIWtan1QtY5ZWRaOap055BNnFH42ZY+nBj3Nascy3yoraYYHxfRdDedoWzTEgsVuw6+9CiVuFHWsWgMjnG5NAsoX69bwfqwqXlpa/Rn5AQp8Eeq6aM7rGVGfAagDgfpk6Wwhy8l4QF9I8oAI=";
+      const dataToEncryptHash =
+        "42d8402d7fe88fdcdb5a8ce47d5f98fb74f9affeb20daa16d0c1bc45218e5910";
+      const accountAddress =
+        "0x0eee7b6daea7801baa6c144bb99ab79c2fcd75ce4014f822372c9d0c925673a0";
+      const publicKey =
+        "0x8803f0e2bf400ffe2a253f701a7d39eae95a02e3b5ec316f0aa73bb1efb2f66b";
+      const signer = new LitAptosSigner(
+        accountAddress,
+        publicKey,
+        Network.TESTNET,
+        ipfsCID,
+        ciphertext,
+        dataToEncryptHash
+      );
 
-      const account = await this.aptos.deriveAccountFromPrivateKey({
-        privateKey: new Ed25519PrivateKey(
-          PrivateKey.formatPrivateKey(
-            process.env.APTOS_PRIVATE_KEY!,
-            PrivateKeyVariants.Ed25519
-          )
-        ),
-      });
-      console.log("Account derived successfully");
+      // const account = await this.aptos.deriveAccountFromPrivateKey({
+      //   privateKey: new Ed25519PrivateKey(
+      //     PrivateKey.formatPrivateKey(
+      //       process.env.APTOS_PRIVATE_KEY!,
+      //       PrivateKeyVariants.Ed25519
+      //     )
+      //   ),
+      // });
+      // console.log("Account derived successfully");
 
-      const signer = new LocalSigner(account, Network.TESTNET);
+      // const signer = new LocalSigner(account, Network.TESTNET);
       this.agent = new AgentRuntime(signer, this.aptos, {
         OPENAI_API_KEY: process.env.OPENAI_API_KEY,
       });

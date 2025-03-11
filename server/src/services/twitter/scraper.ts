@@ -1,16 +1,21 @@
 import { Scraper } from "agent-twitter-client";
 import dotenv from "dotenv";
 import fs from "fs";
-import path from "path";
+import path, { resolve } from "path";
 import { fileURLToPath } from "url";
-
-dotenv.config();
-
+import { dirname } from "path";
+// Convert ESM module URL to filesystem path
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(__filename);
+
+// Load environment variables from root .env file
+dotenv.config({
+  path: resolve(__dirname, "../../../.env"),
+});
 
 const COOKIES_PATH = path.join(
   __dirname,
+  "..",
   "..",
   "..",
   "..",
@@ -23,7 +28,7 @@ export const scraper = new Scraper();
 export const initializeScraper = async () => {
   try {
     console.log(" Initializing Twitter client...");
-
+    console.log("Cookies path : ", COOKIES_PATH);
     // First try to authenticate with stored cookies from file
     if (fs.existsSync(COOKIES_PATH)) {
       try {

@@ -1,6 +1,16 @@
 import { scraper } from "./scraper.js";
 import { SearchMode } from "agent-twitter-client";
 import { queueMention } from "../queue/index.js";
+import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load environment variables from root .env file
+dotenv.config({
+  path: resolve(__dirname, "../../../.env"),
+});
 
 let lastProcessedTweetTime = new Date();
 

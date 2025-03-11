@@ -27,6 +27,7 @@ import {
   VerifySignatureArgs,
 } from "@aptos-labs/ts-sdk";
 import { LitAptosSigner } from "./aptos.service.js";
+import { fileURLToPath } from "url";
 
 // hack to avoid 400 errors sending params back to telegram. not even close to perfect
 const htmlEscape = (_key: AnyType, val: AnyType) => {
@@ -41,7 +42,9 @@ const htmlEscape = (_key: AnyType, val: AnyType) => {
   return val;
 };
 
-const __dirname = path.dirname(new URL(import.meta.url).pathname);
+// const __dirname = path.dirname(new URL(import.meta.url).pathname);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 export class TelegramService extends BaseService {
   private static instance: TelegramService;
   private bot: Bot;
@@ -235,6 +238,7 @@ You can view the token page below (it takes a few minutes to be visible)`,
         try {
           const action = ctx.match.split(" ")[0];
           console.log("action:", action);
+          console.log("Directory path ", __dirname);
           const actionHashes = JSON.parse(
             (
               await fs.readFileSync(

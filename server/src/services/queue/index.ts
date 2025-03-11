@@ -1,5 +1,15 @@
 import { Queue, Worker } from "bullmq";
 import { processMention } from "./processors.js";
+import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname, resolve } from "path";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Load environment variables from root .env file
+dotenv.config({
+  path: resolve(__dirname, "../../../.env"),
+});
 
 // Redis connection config
 const connection = {
