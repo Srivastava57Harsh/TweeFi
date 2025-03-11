@@ -156,6 +156,32 @@ router.get("/callback", async (req: Request, res: Response) => {
     // Clean up stored verifier
     CacheService.getInstance().del(state as string);
 
+    // Get user profile to store in cache
+    try {
+      const profileResponse = await axios.get(
+        "https://api.twitter.com/2/users/me",
+        {
+          headers: {
+            Authorization: `Bearer ${tokenResponse.data.access_token}`,
+          },
+        }
+      );
+
+      if (profileResponse.data && profileResponse.data.data) {
+        const username = profileResponse.data.data.username;
+        // Store token in cache with username as key
+        // This will be used to check if a user has authenticated before
+        CacheService.getInstance().set(
+          `twitter_token_${username}`,
+          tokenResponse.data.access_token
+        );
+        console.log(`[Twitter Callback] Stored token for @${username}`);
+      }
+    } catch (profileError) {
+      console.error("[Twitter Callback] Error fetching profile:", profileError);
+      // Continue with redirect even if profile fetch fails
+    }
+
     // Redirect to success_uri if provided, otherwise use default
     const redirectUrl = successUri || `/auth/twitter/success`;
     return res.redirect(
@@ -211,6 +237,13 @@ router.get("/success", async (req: Request, res: Response) => {
     );
 
     const profile = profileResponse.data;
+
+    // Store token in cache with username as key if available
+    if (profile && profile.data && profile.data.username) {
+      const username = profile.data.username;
+      CacheService.getInstance().set(`twitter_token_${username}`, token);
+      console.log(`[Twitter Success] Stored token for @${username}`);
+    }
 
     res.json({
       success: true,
@@ -395,7 +428,7 @@ router.post("/tweetCard", async (req: Request, res: Response) => {
     const claimURLWithNgrok =
       ngrokURL + `/auth/twitter/card/${slug}/index.html`;
     console.log("[Tweet Card] Claim URL:", claimURLWithNgrok);
-    const message = `🎉 Just claimed my @wow tokens through @${me?.username} Claim yours now, get started below! 🚀\n\n${claimURLWithNgrok}`;
+    const message = `🎉 Just created my Aptos wallet! Create yours now with @${me?.username} - get started below! 🚀\n\n${claimURLWithNgrok}`;
     console.log("[Tweet Card] Sending tweet:", message);
     const { data } = await axios.post(
       "https://api.twitter.com/2/tweets",
@@ -411,7 +444,7 @@ router.post("/tweetCard", async (req: Request, res: Response) => {
     console.log("[Tweet Card] Tweet sent:", data);
     const tweetId = data.data.id;
     const txHash = _txHash;
-    const replyMessage = `Transaction hash: https://basescan.org/tx/${txHash}`;
+    const replyMessage = `My Aptos wallet address: ${txHash}`;
     console.log("[Tweet Card] Replying to tweet:", replyMessage);
     const { data: replyData } = await axios.post(
       "https://api.twitter.com/2/tweets",
@@ -448,5 +481,42 @@ router.post("/tweetCard", async (req: Request, res: Response) => {
     });
   }
 });
+
+router.post(
+  "/createAptosAccount",
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { accessToken, profile } = req.body;
+
+      if (!accessToken || !profile) {
+        res.status(400).json({
+          success: false,
+          error: "Missing required parameters: accessToken and profile",
+        });
+        return;
+      }
+
+      // Hardcoded, need to fix this
+      const address = `0x12345`;
+
+      console.log(
+        `[Create Aptos Account] Created account for Twitter user @${profile.data.username} with address: ${address}`
+      );
+
+      res.status(200).json({
+        success: true,
+        address,
+      });
+      return;
+    } catch (error) {
+      console.error("[Create Aptos Account] Error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Failed to create Aptos account",
+      });
+      return;
+    }
+  }
+);
 
 export default router;

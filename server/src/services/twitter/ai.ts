@@ -19,23 +19,13 @@ export const getAIRecommendation = async (text: string): Promise<string> => {
 
     const AI_API_URL = process.env.AI_API_URL || "http://localhost:8081/api";
 
-    // Add context about token claims to the prompt
-    const enhancedPrompt = `
-User tweet: ${text}
-
-Context: You are a helpful AI assistant for a crypto project. When users mention you, 
-you should respond to their questions and also encourage them to claim their tokens.
-Keep responses concise and friendly. Don't include URLs in your response as they will be 
-added automatically.
-`;
-
     const { data } = await axios.post(
       `${AI_API_URL}/invoke`,
       {
-        prompt: enhancedPrompt,
+        prompt: text,
       },
       {
-        timeout: 10000, // 10 second timeout
+        timeout: 40000, // 10 second timeout
         headers: {
           "Content-Type": "application/json",
         },
@@ -43,7 +33,7 @@ added automatically.
     );
 
     if (!data || !data.message) {
-      throw new Error("Invalid response from AI service");
+      return "Invalid response from AI service";
     }
 
     return data.message;

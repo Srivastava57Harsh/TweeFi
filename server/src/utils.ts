@@ -66,9 +66,9 @@ export const getCardHTML = (botUsername: string, claimURL: string) => {
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="twitter:card" content="player" />
 	<meta name="twitter:site" content="@${botUsername}" />
-	<meta name="twitter:title" content="AI Agent Starter Kit" />
+	<meta name="twitter:title" content="Create Your Aptos Wallet" />
 	<meta name="twitter:description"
-		content="This is a sample card for claiming airdrops with the AI Agent Starter Kit" />
+		content="Create your Aptos wallet with just a few clicks using Twitter authentication" />
 	<meta name="twitter:image" content="https://assets.collab.land/collabland-logo.png" />
 	<meta name="twitter:player" content="${claimURL}" />
 	<meta name="twitter:player:width" content="480" />
@@ -76,7 +76,7 @@ export const getCardHTML = (botUsername: string, claimURL: string) => {
 </head>
 
 <body>
-	<title>Claim token airdrop.</title>
+	<title>Create your Aptos wallet</title>
 </body>
 
 </html>`;
