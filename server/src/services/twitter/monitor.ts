@@ -32,7 +32,7 @@ async function checkMentions(): Promise<void> {
       }
 
       // Skip tweets without required data
-      if (!tweet.id || !tweet.text || !tweet.username) {
+      if (!tweet.id || !tweet.text || !tweet.username || !tweet.userId) {
         console.log("⚠️ Skipping tweet with missing data");
         continue;
       }
@@ -60,6 +60,7 @@ async function checkMentions(): Promise<void> {
         username: tweet.username,
         text: tweet.text,
         id: tweet.id,
+        userId: tweet.userId,
       });
       console.log(`✅ Queued mention from @${tweet.username} for processing`);
     }

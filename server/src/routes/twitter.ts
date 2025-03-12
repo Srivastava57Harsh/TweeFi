@@ -13,8 +13,10 @@ import {
 import { WowXYZERC20__factory } from "../contracts/types/index.js";
 import { parseEther, toBeHex } from "ethers";
 import { TwitterService } from "../services/twitter.service.js";
+import { TwitterUserService } from "../services/twitter-user.service.js";
 
 const router = Router();
+const twitterUserService = TwitterUserService.getInstance();
 
 interface TwitterCacheData {
   verifier: string;
@@ -495,9 +497,37 @@ router.post(
         });
         return;
       }
+      const existingUser = await twitterUserService.getUserById(
+        profile.data.id
+      );
+      if (existingUser) {
+        res.json({ success: true, address: existingUser.accountaddress });
+        return;
+      }
 
       // Hardcoded, need to fix this
       const address = `0x12345`;
+      const publickey = `0x12345`;
+
+      const datatoencrypthash = `0x12345`;
+
+      const ciphertext = `0x12345`;
+      console.log("Profile : ", profile);
+
+      await twitterUserService.createUser({
+        id: profile.data.id,
+        accountaddress: address,
+        publickey,
+        datatoencrypthash,
+        ciphertext,
+        profile: profile.data,
+      });
+
+      // Store token in cache
+      CacheService.getInstance().set(
+        `twitter_token_${profile.data.username}`,
+        accessToken
+      );
 
       console.log(
         `[Create Aptos Account] Created account for Twitter user @${profile.data.username} with address: ${address}`

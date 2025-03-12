@@ -19,6 +19,7 @@ import { isHttpError } from "http-errors";
 import { startMentionMonitor } from "./services/twitter/monitor.js";
 import { initializeScraper } from "./services/twitter/scraper.js";
 import { initializeWorkers } from "./services/queue/index.js";
+import { SupabaseService } from "./services/supabase.service.js";
 
 // Convert ESM module URL to filesystem path
 const __filename = fileURLToPath(import.meta.url);
@@ -30,7 +31,13 @@ const services: IService[] = [];
 // Load environment variables from root .env file
 dotenv.config({
   path: resolve(__dirname, "../../.env"),
+  debug: true, // Enable debug mode to see what's being loaded
+  override: true, // Override any existing env vars
 });
+
+// Verify Supabase env vars are loaded
+console.log("Supabase URL:", process.env.SUPABASE_URL ? "Set" : "Not set");
+console.log("Supabase Key:", process.env.SUPABASE_KEY ? "Set" : "Not set");
 
 // Initialize Express app
 const app = express();
@@ -96,11 +103,11 @@ app.listen(port, async () => {
     console.log(`Server running on PORT: ${port}`);
     console.log("Server Environment:", process.env.NODE_ENV);
 
-    // Initialize Twitter services
-    await initializeScraper();
-    initializeWorkers();
-    startMentionMonitor();
-    console.log("Twitter services initialized");
+    // Initialize Supabase service FIRST
+    const supabaseService = SupabaseService.getInstance();
+    await supabaseService.start();
+    services.push(supabaseService);
+    console.log("Supabase service initialized");
 
     // Start ngrok tunnel for development
     const ngrokService = NgrokService.getInstance();
@@ -117,6 +124,12 @@ app.listen(port, async () => {
 
     const botInfo = await telegramService.getBotInfo();
     console.log("Telegram Bot URL:", `https://t.me/${botInfo.username}`);
+
+    // Initialize Twitter services LAST (after Supabase is ready)
+    await initializeScraper();
+    initializeWorkers();
+    startMentionMonitor();
+    console.log("Twitter services initialized");
   } catch (e) {
     console.error("Failed to start server:", e);
     process.exit(1);

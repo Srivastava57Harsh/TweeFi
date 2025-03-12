@@ -62,6 +62,11 @@ export default function SuccessPage() {
 
         const data = await response.json();
         setProfile(data.profile);
+
+        // If user already has a wallet, set it
+        if (data.wallet) {
+          setAptosAccount(data.wallet);
+        }
       } catch (err) {
         sessionStorage.removeItem("twitter_token");
         setError(err instanceof Error ? err.message : "Something went wrong");

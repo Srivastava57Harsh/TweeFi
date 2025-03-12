@@ -4,12 +4,13 @@ import { getAIRecommendation } from "../twitter/ai.js";
 import { NgrokService } from "../ngrok.service.js";
 import { TwitterService } from "../twitter.service.js";
 import { CacheService } from "../cache.service.js";
+import { TwitterUserService } from "../twitter-user.service.js";
 
 // Cache key prefix for storing Twitter tokens
 const TWITTER_TOKEN_CACHE_PREFIX = "twitter_token_";
 
 export async function processMention(job: Job) {
-  const { username, text, id } = job.data;
+  const { username, text, id, userId } = job.data;
 
   try {
     console.log(`
@@ -29,10 +30,11 @@ export async function processMention(job: Job) {
     const cacheKey = `${TWITTER_TOKEN_CACHE_PREFIX}${username}`;
     const hasToken = CacheService.getInstance().get(cacheKey);
 
-    if (hasToken) {
-      console.log(
-        `🔑 Found existing token for @${username}, using AI response`
-      );
+    const supabaseUser =
+      await TwitterUserService.getInstance().getUserById(userId);
+
+    if (hasToken || supabaseUser) {
+      console.log(`🔑 Found existing user for @${username}, using AI response`);
 
       // Get AI recommendation
       const recommendation = await getAIRecommendation(text);

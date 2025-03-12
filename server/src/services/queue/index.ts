@@ -30,6 +30,7 @@ export const queueMention = async (mention: {
   username: string;
   text: string;
   id: string;
+  userId: string;
 }) => {
   await mentionsQueue.add("process-mention", mention, {
     jobId: mention.id, // Use tweet ID as job ID to prevent duplicates
