@@ -433,6 +433,7 @@ declare global {
   const sigName: string;
   const method: string;
   const ipfsCID: string;
+  const accessToken: string;
 
   // encrypt-action
   const toEncrypt: string;

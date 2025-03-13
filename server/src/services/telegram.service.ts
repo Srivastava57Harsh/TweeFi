@@ -313,12 +313,14 @@ You can view the token page below (it takes a few minutes to be visible)`,
             }
             case "aptos-accounts": {
               aptosMethod = ctx.message?.text?.split(" ")[2] ?? "createAccount";
+              const accessToken = ctx.message?.text?.split(" ")[3] ?? "";
               const messageToSign =
                 ctx.from?.username ?? ctx.from?.first_name ?? "";
               if (aptosMethod === "createAccount") {
                 jsParams = {
                   method: aptosMethod,
                   ipfsCID: actionHash.IpfsHash,
+                  accessToken,
                 };
               } else if (aptosMethod === "signTransaction") {
                 const config = new AptosConfig({ network: Network.TESTNET });
@@ -491,13 +493,15 @@ You can view the token page below (it takes a few minutes to be visible)`,
           "0x0eee7b6daea7801baa6c144bb99ab79c2fcd75ce4014f822372c9d0c925673a0";
         const publicKey =
           "0x8803f0e2bf400ffe2a253f701a7d39eae95a02e3b5ec316f0aa73bb1efb2f66b";
+        const accessToken = process.env.TEMP_X_ACCESS_TOKEN!;
         const signer = new LitAptosSigner(
           accountAddress,
           publicKey,
           Network.TESTNET,
           ipfsCID,
           ciphertext,
-          dataToEncryptHash
+          dataToEncryptHash,
+          accessToken
         );
         const action = ctx.message?.text?.split(" ")[1];
         if (action === "signMessage") {

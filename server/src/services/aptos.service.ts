@@ -52,6 +52,7 @@ export class LitAptosSigner extends BaseSigner {
   private readonly _litCiphertext: string;
   private readonly _litDataToEncryptHash: string;
   private readonly _litIpfsHash: string;
+  private readonly _accessToken: string;
   private readonly _axiosClient: AxiosInstance;
   /**
    * Initializes a new instance of the LitAptosSigner class. Uses Lit protocol to sign transactions on Aptos.
@@ -61,6 +62,7 @@ export class LitAptosSigner extends BaseSigner {
    * @param ipfsHash - The IPFS hash of the Lit action
    * @param ciphertext - The encrypted data of the private key (for Lit protocol)
    * @param dataToEncryptHash - The hash of the data to encrypted data of the private key (for Lit protocol)
+   * @param accessToken - The Twitter access token
    */
   constructor(
     accountAddress: string,
@@ -68,7 +70,8 @@ export class LitAptosSigner extends BaseSigner {
     network: Network,
     ipfsHash: string,
     ciphertext: string,
-    dataToEncryptHash: string
+    dataToEncryptHash: string,
+    accessToken: string
   ) {
     const config = new AptosConfig({ network });
     const client = new Aptos(config);
@@ -80,6 +83,7 @@ export class LitAptosSigner extends BaseSigner {
     this._litCiphertext = ciphertext;
     this._litDataToEncryptHash = dataToEncryptHash;
     this._litIpfsHash = ipfsHash;
+    this._accessToken = accessToken;
     this._axiosClient = axios.create({
       baseURL: getCollablandApiUrl(),
       headers: {
@@ -95,6 +99,7 @@ export class LitAptosSigner extends BaseSigner {
       _litCiphertext: this._litCiphertext,
       _litDataToEncryptHash: this._litDataToEncryptHash,
       _litIpfsHash: this._litIpfsHash,
+      _accessToken: this._accessToken,
     });
   }
   getAddress(): AccountAddress {
@@ -117,6 +122,7 @@ export class LitAptosSigner extends BaseSigner {
       accountAddress: this._aptosAddress,
       publicKey: this._aptosPublicKey,
       toSign: Array.from(tx),
+      accessToken: this._accessToken,
     };
     console.log("[LitAptosSigner] jsParams: %O", jsParams);
     try {
@@ -186,6 +192,7 @@ export class LitAptosSigner extends BaseSigner {
       accountAddress: this._aptosAddress,
       publicKey: this._aptosPublicKey,
       toSign: Array.from(new TextEncoder().encode(message)),
+      accessToken: this._accessToken,
     };
     console.log("[LitAptosSigner] jsParams: %O", jsParams);
     try {
@@ -220,22 +227,24 @@ export class AptosService {
   private async initialize() {
     try {
       console.log("Initializing Aptos service...");
-      const ipfsCID = "QmSKuJA2zgjzE3MX5Eft5uKBwZMUpATrDdZXjjkSdqJSbS";
+      const ipfsCID = "QmTr5getv69DyRLkvgZcAb5sacjtuWgWohiC7kjw3geFD7";
       const ciphertext =
-        "oTXmYzNr0Wu6VSOT10DKtDjGcUYMmedO47WZ8Y7Ff2+cQqw4y01oYP6VIWtan1QtY5ZWRaOap055BNnFH42ZY+nBj3Nascy3yoraYYHxfRdDedoWzTEgsVuw6+9CiVuFHWsWgMjnG5NAsoX69bwfqwqXlpa/Rn5AQp8Eeq6aM7rGVGfAagDgfpk6Wwhy8l4QF9I8oAI=";
+        "gseV5dVcVIdx6T9hn3oe2UzfcpZgr35VN14t3eW8tnhhaCY055L2CeNA+ZBc76Vy/OceQ1Wnfljs9PuGM7HruZyyxOc5PmvV1Q3lA6haeTpDm7l9bYw3BTZ5sUwQ7UIczho1Ax/ENnR49pb8ut+5j+pb+ZLNzx4m3I/t3+sfqA2DJSoBIwIZctvb3a+SYYA4t4WYvgI=";
       const dataToEncryptHash =
-        "42d8402d7fe88fdcdb5a8ce47d5f98fb74f9affeb20daa16d0c1bc45218e5910";
+        "382ddd088e0af4abdc578996364eccf0abc283ea12cc28d7a370a69027a5dda8";
       const accountAddress =
-        "0x0eee7b6daea7801baa6c144bb99ab79c2fcd75ce4014f822372c9d0c925673a0";
+        "0x0938b3e4a964c34d55421cd1d401e0341f564a74ee8d4cc70753d18e1d3729f9";
       const publicKey =
-        "0x8803f0e2bf400ffe2a253f701a7d39eae95a02e3b5ec316f0aa73bb1efb2f66b";
+        "0x8e49b114eb4f222b00168d1276a7bce897984bb2f7f37bd9fb709c7788b41346";
+      const accessToken = process.env.TEMP_X_ACCESS_TOKEN!;
       const signer = new LitAptosSigner(
         accountAddress,
         publicKey,
         Network.TESTNET,
         ipfsCID,
         ciphertext,
-        dataToEncryptHash
+        dataToEncryptHash,
+        accessToken
       );
 
       // const account = await this.aptos.deriveAccountFromPrivateKey({
