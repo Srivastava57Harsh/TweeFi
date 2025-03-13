@@ -130,8 +130,7 @@ export default function SuccessPage() {
           "x-auth-token": token ?? "",
         },
         body: JSON.stringify({
-          txHash: aptosAccount,
-          tokenId,
+          account: aptosAccount,
         }),
       });
 

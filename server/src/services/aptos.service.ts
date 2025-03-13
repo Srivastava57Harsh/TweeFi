@@ -27,6 +27,7 @@ import { createReactAgent } from "@langchain/langgraph/prebuilt";
 import { resolve } from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+import fs from "fs";
 
 import dotenv from "dotenv";
 // Convert ESM module URL to filesystem path
@@ -39,6 +40,8 @@ dotenv.config({
 });
 import axios, { AxiosInstance } from "axios";
 import { getCollablandApiUrl } from "../utils.js";
+import { CreateAptosAccountResponse } from "src/types.js";
+import { isAxiosError } from "axios";
 
 export type SignedTransactionResponse = {
   senderAuthenticator: AccountAuthenticator;
@@ -209,6 +212,82 @@ export class LitAptosSigner extends BaseSigner {
       return response.signature;
     } catch (error) {
       console.error("[LitAptosSigner] Failed to sign message:", error);
+      throw error;
+    }
+  }
+
+  static async getDefaultIPFSHash(): Promise<string> {
+    try {
+      console.log("[LitAptosSigner] getDefaultIPFSHash");
+      console.log("Directory path ", __dirname);
+      const actionHashes = JSON.parse(
+        (
+          await fs.readFileSync(
+            resolve(
+              __dirname,
+              "..",
+              "..",
+              "..",
+              "lit-actions",
+              "actions",
+              `ipfs.json`
+            )
+          )
+        ).toString()
+      );
+      console.log("[LitAptosSigner] actionHashes: %O", actionHashes);
+      const ipfsHash =
+        actionHashes["aptos-accounts"].IpfsHash ??
+        "QmTr5getv69DyRLkvgZcAb5sacjtuWgWohiC7kjw3geFD7";
+      console.log("[LitAptosSigner] getDefaultIPFSHash: %s", ipfsHash);
+      return ipfsHash;
+    } catch (err) {
+      console.error("[LitAptosSigner] Failed to get default IPFS hash:", err);
+      return "QmTr5getv69DyRLkvgZcAb5sacjtuWgWohiC7kjw3geFD7";
+    }
+  }
+
+  static async createAccount(
+    accessToken: string,
+    ipfsCID?: string
+  ): Promise<CreateAptosAccountResponse> {
+    ipfsCID = ipfsCID || (await this.getDefaultIPFSHash());
+    const instance = axios.create({
+      baseURL: getCollablandApiUrl(),
+      headers: {
+        "X-API-KEY": process.env.COLLABLAND_API_KEY || "",
+        "X-TG-BOT-TOKEN": process.env.TELEGRAM_BOT_TOKEN || "",
+        "Content-Type": "application/json",
+      },
+      timeout: 5 * 60 * 1000,
+    });
+    console.log("[LitAptosSigner] createAccount: %O", { accessToken, ipfsCID });
+    try {
+      const chainId = 8453; // does not matter here, but is an API constraint
+      const jsParams = {
+        method: "createAccount",
+        ipfsCID: ipfsCID,
+        accessToken: accessToken,
+      };
+      console.log("[LitAptosSigner] jsParams: %O", jsParams);
+      const { data } = await instance.post(
+        `/telegrambot/executeLitActionUsingPKP?chainId=${chainId}`,
+        {
+          actionIpfs: ipfsCID,
+          actionJsParams: jsParams,
+        }
+      );
+      if (data?.response?.response) {
+        return JSON.parse(data?.response?.response);
+      }
+      throw new Error("Failed to create account");
+    } catch (error) {
+      console.error("[LitAptosSigner] Failed to create account:", error);
+      if (isAxiosError(error)) {
+        throw new Error(
+          error.response?.data?.message || "Failed to create account"
+        );
+      }
       throw error;
     }
   }

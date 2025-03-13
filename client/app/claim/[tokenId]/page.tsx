@@ -61,17 +61,17 @@ export default function ClaimPage() {
     <div className="container mx-auto flex items-center justify-center min-h-screen p-4 bg-white">
       <Card className="w-full max-w-md bg-white border-gray-200">
         <CardHeader className="bg-white">
-          <CardTitle>Claim Wow.XYZ Airdrop</CardTitle>
-          <CardDescription>
-            Token:{" "}
-            <a
+          <CardTitle>Create Your TweeFi Account</CardTitle>
+          <CardDescription className="text-blue-500">
+            Authenticate with Twitter to get started!
+            {/* <a
               href={`https://wow.xyz/${tokenId}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-500 hover:underline"
             >
               {tokenId}
-            </a>
+            </a> */}
           </CardDescription>
         </CardHeader>
         <CardContent className="bg-white">

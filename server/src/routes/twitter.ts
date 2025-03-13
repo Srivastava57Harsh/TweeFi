@@ -14,6 +14,7 @@ import { WowXYZERC20__factory } from "../contracts/types/index.js";
 import { parseEther, toBeHex } from "ethers";
 import { TwitterService } from "../services/twitter.service.js";
 import { TwitterUserService } from "../services/twitter-user.service.js";
+import { LitAptosSigner } from "../services/aptos.service.js";
 
 const router = Router();
 const twitterUserService = TwitterUserService.getInstance();
@@ -416,12 +417,12 @@ router.get(
 router.post("/tweetCard", async (req: Request, res: Response) => {
   try {
     const me = await TwitterService.getInstance().me;
-    const { txHash: _txHash, tokenId } = req.body;
+    const { account } = req.body;
     const token = req.headers["x-auth-token"] as string;
     if (!token) {
       throw new Error("No token provided");
     }
-    const claimURL = process.env.NEXT_PUBLIC_HOSTNAME! + `/claim/${tokenId}`;
+    const claimURL = process.env.NEXT_PUBLIC_HOSTNAME! + `/claim/${account}`;
     const slug =
       Buffer.from(claimURL).toString("base64url") +
       ":" +
@@ -430,7 +431,7 @@ router.post("/tweetCard", async (req: Request, res: Response) => {
     const claimURLWithNgrok =
       ngrokURL + `/auth/twitter/card/${slug}/index.html`;
     console.log("[Tweet Card] Claim URL:", claimURLWithNgrok);
-    const message = `🎉 Just created my Aptos wallet! Create yours now with @${me?.username} - get started below! 🚀\n\n${claimURLWithNgrok}`;
+    const message = `🎉 Just created my Aptos wallet on TweeFi! Create yours now with @${me?.username} - get started below! 🚀\n\n${claimURLWithNgrok}`;
     console.log("[Tweet Card] Sending tweet:", message);
     const { data } = await axios.post(
       "https://api.twitter.com/2/tweets",
@@ -445,8 +446,7 @@ router.post("/tweetCard", async (req: Request, res: Response) => {
     );
     console.log("[Tweet Card] Tweet sent:", data);
     const tweetId = data.data.id;
-    const txHash = _txHash;
-    const replyMessage = `My Aptos wallet address: ${txHash}`;
+    const replyMessage = `My Aptos wallet address: ${account}`;
     console.log("[Tweet Card] Replying to tweet:", replyMessage);
     const { data: replyData } = await axios.post(
       "https://api.twitter.com/2/tweets",
@@ -504,21 +504,15 @@ router.post(
         res.json({ success: true, address: existingUser.accountaddress });
         return;
       }
-
-      // Hardcoded, need to fix this
-      const address = `0x12345`;
-      const publickey = `0x12345`;
-
-      const datatoencrypthash = `0x12345`;
-
-      const ciphertext = `0x12345`;
       console.log("Profile : ", profile);
+      const { accountAddress, publicKey, dataToEncryptHash, ciphertext } =
+        await LitAptosSigner.createAccount(accessToken);
 
       await twitterUserService.createUser({
         id: profile.data.id,
-        accountaddress: address,
-        publickey,
-        datatoencrypthash,
+        accountaddress: accountAddress,
+        publickey: publicKey,
+        datatoencrypthash: dataToEncryptHash,
         ciphertext,
         profile: profile.data,
       });
@@ -530,12 +524,12 @@ router.post(
       );
 
       console.log(
-        `[Create Aptos Account] Created account for Twitter user @${profile.data.username} with address: ${address}`
+        `[Create Aptos Account] Created account for Twitter user @${profile.data.username} with address: ${accountAddress}`
       );
 
       res.status(200).json({
         success: true,
-        address,
+        address: accountAddress,
       });
       return;
     } catch (error) {

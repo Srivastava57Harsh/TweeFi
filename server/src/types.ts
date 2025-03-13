@@ -59,3 +59,10 @@ export interface IUserOperationReceipt {
   receipt?: ITransactionReceipt;
   logs?: ILog[];
 }
+
+export interface CreateAptosAccountResponse {
+  ciphertext: string;
+  dataToEncryptHash: string;
+  accountAddress: string;
+  publicKey: string;
+}
