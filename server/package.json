@@ -25,6 +25,7 @@
     "@langchain/openai": "^0.4.4",
     "@ngrok/ngrok": "^1.4.1",
     "@solana/web3.js": "^1.98.0",
+    "@supabase/supabase-js": "^2.39.7",
     "@useorbis/db-sdk": "0.0.60-alpha",
     "agent-twitter-client": "^0.0.18",
     "axios": "^1.7.7",
@@ -37,12 +38,12 @@
     "express": "^4.21.1",
     "grammy": "^1.32.0",
     "http-errors": "^2.0.0",
+    "ioredis": "^5.6.0",
     "jsonc-parser": "^3.3.1",
     "move-agent-kit": "^0.2.0",
     "node-cache": "^5.1.2",
     "prettier": "^3.4.2",
-    "tsc-watch": "^6.2.1",
-    "@supabase/supabase-js": "^2.39.7"
+    "tsc-watch": "^6.2.1"
   },
   "devDependencies": {
     "@typechain/ethers-v6": "^0.5.1",

@@ -31,7 +31,7 @@ interface TwitterProfile {
 }
 
 export default function SuccessPage() {
-  const { tokenId } = useParams();
+  const { tokenId } = useParams(); //basically being used as an action handler, can be signup or login
   const searchParams = useSearchParams();
   const router = useRouter();
   const [profile, setProfile] = useState<TwitterProfile | null>(null);
@@ -151,7 +151,9 @@ export default function SuccessPage() {
           <CardHeader className="bg-white">
             <CardTitle>Twitter Authentication Success</CardTitle>
             <CardDescription>
-              Create your Aptos wallet to get started
+              {tokenId === "login"
+                ? "Login successful, you can now close the window!"
+                : "Create your Aptos wallet to get started"}
             </CardDescription>
           </CardHeader>
           <CardContent className="bg-white">
@@ -227,13 +229,26 @@ export default function SuccessPage() {
       )}
 
       {profile && !aptosAccount && (
-        <Button
-          onClick={handleCreateAptosAccount}
-          disabled={isCreatingAccount}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
-        >
-          {isCreatingAccount ? "Creating Account..." : "Create Aptos Account"}
-        </Button>
+        <>
+          {tokenId === "login" ? (
+            <Button
+              disabled={true}
+              className="px-4 py-2 bg-green-500 text-white rounded disabled:bg-green-500 disabled:opacity-100"
+            >
+              Login Successful
+            </Button>
+          ) : (
+            <Button
+              onClick={handleCreateAptosAccount}
+              disabled={isCreatingAccount}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
+            >
+              {isCreatingAccount
+                ? "Creating Account..."
+                : "Create Aptos Account"}
+            </Button>
+          )}
+        </>
       )}
 
       {isCreatingAccount && (

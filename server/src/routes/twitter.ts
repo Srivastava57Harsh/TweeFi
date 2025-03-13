@@ -84,7 +84,7 @@ router.post("/init", async (req: Request, res: Response) => {
     // Generate and store PKCE parameters
     const codeVerifier = generateCodeVerifier();
     const codeChallenge = generateCodeChallenge(codeVerifier);
-    CacheService.getInstance().set<TwitterCacheData>(state, {
+    await CacheService.getInstance().set<TwitterCacheData>(state, {
       verifier: codeVerifier,
       successUri: success_uri,
     });
@@ -123,7 +123,7 @@ router.get("/callback", async (req: Request, res: Response) => {
     const { code, state } = req.query;
 
     // Verify state matches and get stored verifier
-    const stored = CacheService.getInstance().get<TwitterCacheData>(
+    const stored = await CacheService.getInstance().get<TwitterCacheData>(
       state as string
     );
     if (!stored) {
@@ -157,7 +157,7 @@ router.get("/callback", async (req: Request, res: Response) => {
     );
 
     // Clean up stored verifier
-    CacheService.getInstance().del(state as string);
+    await CacheService.getInstance().del(state as string);
 
     // Get user profile to store in cache
     try {
@@ -172,13 +172,17 @@ router.get("/callback", async (req: Request, res: Response) => {
 
       if (profileResponse.data && profileResponse.data.data) {
         const username = profileResponse.data.data.username;
+        const userId = profileResponse.data.data.id;
         // Store token in cache with username as key
         // This will be used to check if a user has authenticated before
-        CacheService.getInstance().set(
-          `twitter_token_${username}`,
-          tokenResponse.data.access_token
+        await CacheService.getInstance().set(
+          `twitter_token_${userId}`,
+          tokenResponse.data.access_token,
+          24 * 60 * 60 // 24 hours
         );
-        console.log(`[Twitter Callback] Stored token for @${username}`);
+        console.log(
+          `[Twitter Callback] Stored token for @${username} [${userId}]`
+        );
       }
     } catch (profileError) {
       console.error("[Twitter Callback] Error fetching profile:", profileError);
@@ -244,8 +248,15 @@ router.get("/success", async (req: Request, res: Response) => {
     // Store token in cache with username as key if available
     if (profile && profile.data && profile.data.username) {
       const username = profile.data.username;
-      CacheService.getInstance().set(`twitter_token_${username}`, token);
-      console.log(`[Twitter Success] Stored token for @${username}`);
+      const userId = profile.data.id;
+      await CacheService.getInstance().set(
+        `twitter_token_${userId}`,
+        token,
+        24 * 60 * 60 // 24 hours
+      );
+      console.log(
+        `[Twitter Success] Stored token for @${username} [${userId}]`
+      );
     }
 
     res.json({
@@ -518,9 +529,10 @@ router.post(
       });
 
       // Store token in cache
-      CacheService.getInstance().set(
-        `twitter_token_${profile.data.username}`,
-        accessToken
+      await CacheService.getInstance().set(
+        `twitter_token_${profile.data.id}`,
+        accessToken,
+        24 * 60 * 60 // 24 hours
       );
 
       console.log(

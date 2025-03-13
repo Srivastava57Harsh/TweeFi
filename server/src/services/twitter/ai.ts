@@ -12,7 +12,8 @@ dotenv.config({
 
 export const getAIRecommendation = async (
   text: string,
-  userId: string
+  userId: string,
+  accessToken: string
 ): Promise<string> => {
   try {
     // Add request validation and retry logic
@@ -27,7 +28,7 @@ export const getAIRecommendation = async (
       {
         prompt: text,
         userId: userId,
-        accessToken: process.env.TEMP_X_ACCESS_TOKEN!,
+        accessToken: accessToken,
       },
       {
         timeout: 40000, // 40 second timeout

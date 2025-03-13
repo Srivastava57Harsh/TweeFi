@@ -13,7 +13,7 @@ import { useEffect, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ClaimPage() {
-  const { tokenId } = useParams();
+  const { tokenId } = useParams(); //basically being used as an action handler, can be signup or login
   const router = useRouter();
   const [hostname, setHostname] = useState("");
   const [isChecking, setIsChecking] = useState(true);
@@ -61,7 +61,9 @@ export default function ClaimPage() {
     <div className="container mx-auto flex items-center justify-center min-h-screen p-4 bg-white">
       <Card className="w-full max-w-md bg-white border-gray-200">
         <CardHeader className="bg-white">
-          <CardTitle>Create Your TweeFi Account</CardTitle>
+          <CardTitle>
+            {tokenId === "signup" ? "Create" : "Login to"} Your TweeFi Account
+          </CardTitle>
           <CardDescription className="text-blue-500">
             Authenticate with Twitter to get started!
             {/* <a

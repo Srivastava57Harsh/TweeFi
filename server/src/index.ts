@@ -20,6 +20,7 @@ import { startMentionMonitor } from "./services/twitter/monitor.js";
 import { initializeScraper } from "./services/twitter/scraper.js";
 import { initializeWorkers } from "./services/queue/index.js";
 import { SupabaseService } from "./services/supabase.service.js";
+import { CacheService } from "./services/cache.service.js";
 
 // Convert ESM module URL to filesystem path
 const __filename = fileURLToPath(import.meta.url);
@@ -102,6 +103,12 @@ app.listen(port, async () => {
   try {
     console.log(`Server running on PORT: ${port}`);
     console.log("Server Environment:", process.env.NODE_ENV);
+
+    //Initialize Redis cache service
+    const cacheService = await CacheService.getInstance();
+    await cacheService.start();
+    services.push(cacheService);
+    console.log("Cache service initialized");
 
     // Initialize Supabase service FIRST
     const supabaseService = SupabaseService.getInstance();

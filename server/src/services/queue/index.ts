@@ -10,19 +10,18 @@ const __dirname = dirname(__filename);
 dotenv.config({
   path: resolve(__dirname, "../../../.env"),
 });
-
-// Redis connection config
-const connection = {
-  host: process.env.REDIS_HOST || "localhost",
-  port: parseInt(process.env.REDIS_PORT || "6379"),
-};
-
 // Create queues
-export const mentionsQueue = new Queue("mentions", { connection });
+export const mentionsQueue = new Queue("mentions", {
+  connection: {
+    url: process.env.REDIS_URL,
+  },
+});
 
 // Initialize workers
 export const initializeWorkers = () => {
-  new Worker("mentions", processMention, { connection });
+  new Worker("mentions", processMention, {
+    connection: { url: process.env.REDIS_URL },
+  });
 };
 
 // Helper to add mention to queue

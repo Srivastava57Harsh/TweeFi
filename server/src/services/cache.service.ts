@@ -1,11 +1,16 @@
-import NodeCache from "node-cache";
+import { Redis } from "ioredis";
+import { BaseService } from "./base.service.js";
 
-export class CacheService {
+export class CacheService extends BaseService {
   private static instance: CacheService;
-  private cache: NodeCache;
+  private cache: Redis;
 
   private constructor() {
-    this.cache = new NodeCache({ stdTTL: 600 }); // 10 minutes TTL
+    super();
+    console.log("Redis URL:", process.env.REDIS_URL);
+    this.cache = new Redis(process.env.REDIS_URL!, {
+      maxRetriesPerRequest: null,
+    });
   }
 
   public static getInstance(): CacheService {
@@ -15,15 +20,48 @@ export class CacheService {
     return CacheService.instance;
   }
 
-  public set<T>(key: string, value: T): boolean {
-    return this.cache.set(key, value);
+  public async set<T>(key: string, value: T, ttl = 600): Promise<string> {
+    return this.cache.set(key, JSON.stringify(value), "EX", ttl);
   }
 
-  public get<T>(key: string): T | undefined {
-    return this.cache.get<T>(key);
+  public async get<T>(key: string): Promise<T | undefined> {
+    const cached = await this.cache.get(key);
+    if (cached) {
+      return JSON.parse(cached) as T;
+    }
+    return undefined;
   }
 
-  public del(key: string): number {
+  public async del(key: string): Promise<number> {
     return this.cache.del(key);
+  }
+
+  public async getClient(): Promise<Redis> {
+    if (!this.cache) {
+      throw new Error("Cache client not initialized");
+    }
+    return this.cache;
+  }
+
+  public async start(): Promise<void> {
+    if (!process.env.REDIS_URL) {
+      throw new Error("REDIS_URL is required");
+    }
+    try {
+      this.cache = new Redis(process.env.REDIS_URL, {
+        maxRetriesPerRequest: null,
+      });
+      console.log("Cache client initialized");
+    } catch (error) {
+      console.error("Cache initialization error:", error);
+      throw new Error("Failed to initialize cache client");
+    }
+  }
+
+  public async stop(): Promise<void> {
+    if (!this.cache) {
+      throw new Error("Cache client not initialized");
+    }
+    await this.cache.quit();
   }
 }
