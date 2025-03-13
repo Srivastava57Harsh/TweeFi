@@ -37,7 +37,7 @@ export async function processMention(job: Job) {
       console.log(`🔑 Found existing user for @${username}, using AI response`);
 
       // Get AI recommendation
-      const recommendation = await getAIRecommendation(text);
+      const recommendation = await getAIRecommendation(text, userId);
       console.log(`💡 Generated response: ${recommendation}`);
 
       // Send reply tweet with just the AI response

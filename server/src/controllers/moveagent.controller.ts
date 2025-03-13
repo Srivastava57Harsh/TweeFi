@@ -19,7 +19,7 @@ export class MoveAgentController {
 
   public async handleTransfer(req: Request, res: Response): Promise<void> {
     try {
-      const { prompt } = req.body;
+      const { prompt, userId, accessToken } = req.body;
 
       // Input validation
       if (!prompt || typeof prompt !== "string") {
@@ -30,8 +30,20 @@ export class MoveAgentController {
         return;
       }
 
+      if (!userId || !accessToken) {
+        res.status(400).json({
+          success: false,
+          message: "Invalid request: userId and accessToken are required",
+        });
+        return;
+      }
+
       // Process the transfer request
-      const result = await this.aptosService.processRequest(prompt);
+      const result = await this.aptosService.processRequest(
+        userId,
+        accessToken,
+        prompt
+      );
 
       res.json({
         success: true,
@@ -54,6 +66,14 @@ export class MoveAgentController {
           res.status(400).json({
             success: false,
             message: "Invalid Aptos address provided",
+          });
+          return;
+        }
+
+        if (error.message.includes("not found in database")) {
+          res.status(404).json({
+            success: false,
+            message: "User not found",
           });
           return;
         }

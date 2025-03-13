@@ -10,7 +10,10 @@ dotenv.config({
   path: resolve(__dirname, "../../../.env"),
 });
 
-export const getAIRecommendation = async (text: string): Promise<string> => {
+export const getAIRecommendation = async (
+  text: string,
+  userId: string
+): Promise<string> => {
   try {
     // Add request validation and retry logic
     if (!text || typeof text !== "string") {
@@ -23,9 +26,11 @@ export const getAIRecommendation = async (text: string): Promise<string> => {
       `${AI_API_URL}/invoke`,
       {
         prompt: text,
+        userId: userId,
+        accessToken: process.env.TEMP_X_ACCESS_TOKEN!,
       },
       {
-        timeout: 40000, // 10 second timeout
+        timeout: 40000, // 40 second timeout
         headers: {
           "Content-Type": "application/json",
         },
@@ -50,6 +55,6 @@ export const getAIRecommendation = async (text: string): Promise<string> => {
         );
       }
     }
-    return "Thanks for reaching out! I'd be happy to help you claim your tokens.";
+    return "Thanks for reaching out! Try again later.";
   }
 };

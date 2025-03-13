@@ -42,6 +42,7 @@ import axios, { AxiosInstance } from "axios";
 import { getCollablandApiUrl } from "../utils.js";
 import { CreateAptosAccountResponse } from "src/types.js";
 import { isAxiosError } from "axios";
+import { TwitterUserService } from "./twitter-user.service.js";
 
 export type SignedTransactionResponse = {
   senderAuthenticator: AccountAuthenticator;
@@ -295,90 +296,110 @@ export class LitAptosSigner extends BaseSigner {
 
 export class AptosService {
   private aptos: Aptos;
-  private agent!: AgentRuntime;
-  private llmAgent!: ReturnType<typeof createReactAgent>; // Dynamically inferred type
+  private userAgents: Map<
+    string,
+    { agent: AgentRuntime; llmAgent: ReturnType<typeof createReactAgent> }
+  >;
 
   constructor() {
     this.aptos = new Aptos(aptosConfig);
-    this.initialize();
+    this.userAgents = new Map();
   }
 
-  private async initialize() {
+  private async initializeUserAgent(
+    userId: string,
+    accessToken: string
+  ): Promise<void> {
     try {
-      console.log("Initializing Aptos service...");
-      const ipfsCID = "QmTr5getv69DyRLkvgZcAb5sacjtuWgWohiC7kjw3geFD7";
-      const ciphertext =
-        "gseV5dVcVIdx6T9hn3oe2UzfcpZgr35VN14t3eW8tnhhaCY055L2CeNA+ZBc76Vy/OceQ1Wnfljs9PuGM7HruZyyxOc5PmvV1Q3lA6haeTpDm7l9bYw3BTZ5sUwQ7UIczho1Ax/ENnR49pb8ut+5j+pb+ZLNzx4m3I/t3+sfqA2DJSoBIwIZctvb3a+SYYA4t4WYvgI=";
-      const dataToEncryptHash =
-        "382ddd088e0af4abdc578996364eccf0abc283ea12cc28d7a370a69027a5dda8";
-      const accountAddress =
-        "0x0938b3e4a964c34d55421cd1d401e0341f564a74ee8d4cc70753d18e1d3729f9";
-      const publicKey =
-        "0x8e49b114eb4f222b00168d1276a7bce897984bb2f7f37bd9fb709c7788b41346";
-      const accessToken = process.env.TEMP_X_ACCESS_TOKEN!;
+      console.log(`Initializing Aptos service for user ${userId}...`);
+
+      // Get user details from Supabase
+      const twitterUserService = TwitterUserService.getInstance();
+      const user = await twitterUserService.getUserById(userId);
+
+      if (!user) {
+        throw new Error(`User ${userId} not found in database`);
+      }
+
+      // Get IPFS hash for Lit Action
+      const ipfsCID = await LitAptosSigner.getDefaultIPFSHash();
+
+      // Create signer with user's details
       const signer = new LitAptosSigner(
-        accountAddress,
-        publicKey,
+        user.accountaddress,
+        user.publickey,
         Network.TESTNET,
         ipfsCID,
-        ciphertext,
-        dataToEncryptHash,
+        user.ciphertext,
+        user.datatoencrypthash,
         accessToken
       );
 
-      // const account = await this.aptos.deriveAccountFromPrivateKey({
-      //   privateKey: new Ed25519PrivateKey(
-      //     PrivateKey.formatPrivateKey(
-      //       process.env.APTOS_PRIVATE_KEY!,
-      //       PrivateKeyVariants.Ed25519
-      //     )
-      //   ),
-      // });
-      // console.log("Account derived successfully");
-
-      // const signer = new LocalSigner(account, Network.TESTNET);
-      this.agent = new AgentRuntime(signer, this.aptos, {
+      // Initialize agent runtime
+      const agent = new AgentRuntime(signer, this.aptos, {
         OPENAI_API_KEY: process.env.OPENAI_API_KEY,
       });
-      console.log("Agent runtime initialized");
 
-      const tools = createAptosTools(this.agent);
-      console.log("Aptos tools created:", tools.map((t) => t.name).join(", "));
+      const tools = createAptosTools(agent);
+      console.log(
+        "Aptos tools created for user:",
+        tools.map((t) => t.name).join(", ")
+      );
 
       const llm = new ChatOpenAI({
         modelName: "gpt-4o-mini",
         temperature: 0.7,
       });
 
-      this.llmAgent = createReactAgent({
+      const llmAgent = createReactAgent({
         llm,
         tools,
         messageModifier: `
-                    You are a helpful agent that can interact with the Aptos blockchain using Move Agent Kit.
-                    You have access to various tools for interacting with the Aptos blockchain.
-                    When responding to requests:
-                    1. For balance inquiries: Use AptosBalanceTool and respond with "Your balance is X APT"
-                    2. For transfers: Use AptosTransferTokenTool and respond with "Successfully transferred X APT to <address>"
-                    3. For errors: Provide clear error messages starting with "Sorry, "
-                    4. For token details: Use AptosGetTokenDetailTool and provide token information
-                    5. For transactions: Use AptosTransactionTool to get transaction details
-                    
-                    Always be precise and include relevant details in your responses.
-                    If you encounter any errors, explain what went wrong clearly.
-                    Log all tool usage and their results.
-                `,
+          You are a helpful agent that can interact with the Aptos blockchain using Move Agent Kit.
+          You have access to various tools for interacting with the Aptos blockchain.
+          When responding to requests:
+          1. For balance inquiries: Use AptosBalanceTool and respond with "Your balance is X APT"
+          2. For transfers: Use AptosTransferTokenTool and respond with "Successfully transferred X APT to <address>"
+          3. For errors: Provide clear error messages starting with "Sorry, "
+          4. For token details: Use AptosGetTokenDetailTool and provide token information
+          5. For transactions: Use AptosTransactionTool to get transaction details
+          
+          Always be precise and include relevant details in your responses.
+          If you encounter any errors, explain what went wrong clearly.
+          Log all tool usage and their results.
+        `,
       });
-      console.log("LLM agent created and ready to process requests");
+
+      // Store the agents for this user
+      this.userAgents.set(userId, { agent, llmAgent });
+      console.log(`LLM agent created and ready for user ${userId}`);
     } catch (error) {
-      console.error("Failed to initialize Aptos service:", error);
+      console.error(
+        `Failed to initialize Aptos service for user ${userId}:`,
+        error
+      );
       throw error;
     }
   }
 
-  async processRequest(prompt: string): Promise<string> {
+  async processRequest(
+    userId: string,
+    accessToken: string,
+    prompt: string
+  ): Promise<string> {
     try {
-      console.log("Processing request:", prompt);
-      const stream = await this.llmAgent.stream({
+      // Check if we have an agent for this user, if not initialize one
+      if (!this.userAgents.has(userId)) {
+        await this.initializeUserAgent(userId, accessToken);
+      }
+
+      const userAgent = this.userAgents.get(userId);
+      if (!userAgent) {
+        throw new Error(`No agent found for user ${userId}`);
+      }
+
+      console.log(`Processing request for user ${userId}:`, prompt);
+      const stream = await userAgent.llmAgent.stream({
         messages: [new HumanMessage(prompt)],
       });
 
@@ -392,10 +413,10 @@ export class AptosService {
         }
       }
 
-      console.log("Final response:", response);
+      console.log(`Final response for user ${userId}:`, response);
       return response;
     } catch (error: unknown) {
-      console.error("Failed to process request:", error);
+      console.error(`Failed to process request for user ${userId}:`, error);
       throw new Error(`Sorry, couldn't process your request: ${error}`);
     }
   }
