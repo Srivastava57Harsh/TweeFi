@@ -9,15 +9,82 @@ import { TwitterUserService } from "../twitter-user.service.js";
 // Cache key prefix for storing Twitter tokens
 const TWITTER_TOKEN_CACHE_PREFIX = "twitter_token_";
 
+// Helper function to extract mentions from text
+function extractMentions(text: string, botUsername: string): string[] {
+  const mentions = text.match(/@(\w+)/g) || [];
+  return mentions
+    .map((mention) => mention.substring(1)) // Remove @ symbol
+    .filter((username) => username.toLowerCase() !== botUsername.toLowerCase());
+}
+
+async function sendPlayerCard(
+  username: string,
+  tweetId: string,
+  action: string,
+  customMessage: string
+) {
+  console.log(`🔑 Sending player card to @${username}`);
+
+  const ngrokURL = await NgrokService.getInstance().getUrl();
+  const me = await TwitterService.getInstance().me;
+  const claimURL = `${process.env.NEXT_PUBLIC_HOSTNAME}/claim/${action}`;
+  const slug =
+    Buffer.from(claimURL).toString("base64url") +
+    ":" +
+    Buffer.from(me?.username ?? "").toString("base64url");
+  const cardURL = `${ngrokURL}/auth/twitter/card/${slug}/index.html`;
+
+  const welcomeMessage =
+    customMessage ||
+    "Thanks for reaching out! To get started, please authenticate with Twitter using the link below:";
+  const fullResponse = `${welcomeMessage}\n\n${cardURL}`;
+
+  await scraper.sendTweet(fullResponse, tweetId);
+  console.log(`✅ Successfully replied to @${username} with player card`);
+}
+
+// Helper function to replace mentions with wallet addresses
+async function replaceMentionsWithAddresses(
+  text: string,
+  mentions: string[]
+): Promise<{
+  text: string;
+  userMapping: { username: string; address: string }[];
+  unregisteredUsers: string[];
+}> {
+  const twitterUserService = TwitterUserService.getInstance();
+  let modifiedText = text;
+  const userMapping: { username: string; address: string }[] = [];
+  const unregisteredUsers: string[] = [];
+
+  for (const username of mentions) {
+    const user = await twitterUserService.getUserByUsername(username);
+    if (user) {
+      // Store both the username and the wallet address
+      userMapping.push({ username, address: user.accountaddress });
+
+      // Replace @username with the wallet address
+      modifiedText = modifiedText.replace(
+        new RegExp(`@${username}`, "gi"),
+        user.accountaddress
+      );
+    } else {
+      unregisteredUsers.push(username);
+    }
+  }
+
+  return { text: modifiedText, userMapping, unregisteredUsers };
+}
+
 export async function processMention(job: Job) {
-  const { username, text, id, userId } = job.data;
+  const { username, text, id: tweetId, userId } = job.data;
 
   try {
     console.log(`
 🎯 Processing mention:
 👤 From: @${username}
 💬 Text: ${text}
-🆔 Tweet ID: ${id}
+🆔 Tweet ID: ${tweetId}
     `);
 
     // Check if logged in before proceeding
@@ -27,86 +94,71 @@ export async function processMention(job: Job) {
     }
 
     // Check if we have a token for this user
-    const cacheKey = `${TWITTER_TOKEN_CACHE_PREFIX}${username}`;
-    const hasToken = await CacheService.getInstance().get<string>(cacheKey);
+    const cacheKey = `${TWITTER_TOKEN_CACHE_PREFIX}${userId}`;
+    const accessToken = await CacheService.getInstance().get<string>(cacheKey);
 
-    const supabaseUser =
-      await TwitterUserService.getInstance().getUserById(userId);
+    const sender = await TwitterUserService.getInstance().getUserById(userId);
 
-    if (hasToken != null && supabaseUser != null) {
-      console.log(`🔑 Found existing user for @${username}, using AI response`);
+    // Extract mentions from the tweet
+    const me = await TwitterService.getInstance().me;
+    const mentions = extractMentions(text, me?.username || "higherthansudobot");
 
-      // Get AI recommendation
-      const recommendation = await getAIRecommendation(text, userId, hasToken);
+    if (accessToken && sender) {
+      console.log(
+        `🔑 Found existing user for @${username}, processing mentions`
+      );
+
+      // Process mentions and replace with wallet addresses
+      const {
+        text: processedText,
+        userMapping,
+        unregisteredUsers,
+      } = await replaceMentionsWithAddresses(text, mentions);
+
+      if (unregisteredUsers.length > 0) {
+        await sendPlayerCard(
+          unregisteredUsers.join(", "),
+          tweetId,
+          "signup",
+          `Hey ${unregisteredUsers.map((u) => "@" + u).join(", ")}! 👋\n\nSomeone wants to send you tokens through Tweefi! 🎉\n\nTo receive them, you'll need to create an Aptos wallet first.\nIt's super easy - just click the link below to get started:`
+        );
+        return;
+      }
+      // Construct a mapping string for AI
+      const formattedUsers = userMapping
+        .map(({ username, address }) => `@${username} (${address})`)
+        .join(", ");
+
+      // Get AI recommendation with processed text
+
+      const recommendation = await getAIRecommendation(
+        `Processed text: ${processedText}. User details: ${formattedUsers}.`,
+        userId,
+        accessToken
+      );
+
       console.log(`💡 Generated response: ${recommendation}`);
 
-      // Send reply tweet with just the AI response
-      await scraper.sendTweet(recommendation, id);
+      // Send reply tweet
+      await scraper.sendTweet(recommendation, tweetId);
       console.log(`✅ Successfully replied to @${username} with AI response`);
-    } else if (supabaseUser == null) {
-      console.log(`🔑 No user found for @${username}, sending player card`);
-
-      // Get token ID from environment or use a default
-      const action = "signup";
-
-      // Create a player card for the response
-      const ngrokURL = await NgrokService.getInstance().getUrl();
-      const me = await TwitterService.getInstance().me;
-
-      // Generate claim URL
-      const claimURL = `${process.env.NEXT_PUBLIC_HOSTNAME}/claim/${action}`;
-
-      // Create slug for the card
-      const slug =
-        Buffer.from(claimURL).toString("base64url") +
-        ":" +
-        Buffer.from(me?.username ?? "").toString("base64url");
-
-      // Generate card URL
-      const cardURL = `${ngrokURL}/auth/twitter/card/${slug}/index.html`;
-
-      // Create a friendly message for first-time users
-      const welcomeMessage =
-        "Thanks for reaching out! To get started, please authenticate with Twitter using the link below:";
-
-      // Combine welcome message with card URL
-      const fullResponse = `${welcomeMessage}\n\n${cardURL}`;
-
-      // Send reply tweet
-      await scraper.sendTweet(fullResponse, id);
-      console.log(`✅ Successfully replied to @${username} with player card`);
     } else {
-      console.log(`🔑 No token found for @${username}, sending player card`);
-
-      // Get token ID from environment or use a default
-      const action = "login";
-
-      // Create a player card for the response
-      const ngrokURL = await NgrokService.getInstance().getUrl();
-      const me = await TwitterService.getInstance().me;
-
-      // Generate claim URL
-      const claimURL = `${process.env.NEXT_PUBLIC_HOSTNAME}/claim/${action}`;
-
-      // Create slug for the card
-      const slug =
-        Buffer.from(claimURL).toString("base64url") +
-        ":" +
-        Buffer.from(me?.username ?? "").toString("base64url");
-
-      // Generate card URL
-      const cardURL = `${ngrokURL}/auth/twitter/card/${slug}/index.html`;
-
-      // Create a friendly message for first-time users
-      const welcomeMessage =
-        "Session expired! Please authenticate with Twitter using the link below:";
-
-      // Combine welcome message with card URL
-      const fullResponse = `${welcomeMessage}\n\n${cardURL}`;
-
-      // Send reply tweet
-      await scraper.sendTweet(fullResponse, id);
-      console.log(`✅ Successfully replied to @${username} with player card`);
+      console.log(
+        `🔑 No user found or session expired for @${username}, sending player card`
+      );
+      let welcomeMessage: string;
+      if (sender)
+        welcomeMessage =
+          "Session expired! Please authenticate with Twitter using the link below:";
+      else
+        welcomeMessage =
+          "Thanks for reaching out! To get started, please authenticate with Twitter using the link below:";
+      await sendPlayerCard(
+        username,
+        tweetId,
+        sender ? "login" : "signup",
+        welcomeMessage
+      );
     }
   } catch (error) {
     console.error(`❌ Failed to process mention from @${username}:`, error);

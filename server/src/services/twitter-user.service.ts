@@ -70,6 +70,24 @@ export class TwitterUserService {
     return data;
   }
 
+  public async getUserByUsername(
+    username: string
+  ): Promise<TwitterUser | null> {
+    await this.ensureSupabaseClient();
+    const { data, error } = await this.supabaseClient
+      .from("users")
+      .select("*")
+      .eq("profile->>username", username)
+      .single();
+
+    if (error) {
+      console.error("Error getting user by username:", error);
+      return null;
+    }
+
+    return data;
+  }
+
   public async getUserByAddress(address: string): Promise<TwitterUser | null> {
     await this.ensureSupabaseClient();
     const { data, error } = await this.supabaseClient

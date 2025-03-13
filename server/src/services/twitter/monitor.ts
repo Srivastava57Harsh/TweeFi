@@ -27,7 +27,6 @@ async function checkMentions(): Promise<void> {
     )) {
       // Skip our own tweets
       if (tweet.username === process.env.TWITTER_USERNAME) {
-        console.log(`⏩ Skipping own tweet from @${tweet.username}`);
         continue;
       }
 
@@ -41,9 +40,6 @@ async function checkMentions(): Promise<void> {
       const tweetTime = new Date(timestamp);
 
       if (tweetTime <= lastProcessedTweetTime) {
-        console.log(
-          `⏩ Skipping already processed tweet from @${tweet.username}`
-        );
         continue;
       }
 
