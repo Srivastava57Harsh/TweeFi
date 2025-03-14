@@ -2,28 +2,25 @@ import {
   Account,
   Aptos,
   AptosConfig,
-  // Ed25519PrivateKey,
   Network,
-  // PrivateKey,
-  // PrivateKeyVariants,
   AccountAddress,
   AnyRawTransaction,
   AccountAuthenticator,
   Deserializer,
   RawTransaction,
   SimpleTransaction,
+  Ed25519PrivateKey,
 } from "@aptos-labs/ts-sdk";
 import {
   // LocalSigner,
   BaseSigner,
 } from "move-agent-kit";
-// import { VerifySignatureArgs } from "@aptos-labs/ts-sdk";
+
 import { AgentRuntime, createAptosTools } from "move-agent-kit";
 import { aptosConfig } from "../config/aptos.config.js";
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage } from "@langchain/core/messages";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
-// import { MemorySaver } from "@langchain/langgraph";
 import { resolve } from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
@@ -172,7 +169,9 @@ export class LitAptosSigner extends BaseSigner {
         rawTx.chain_id
       )
     );
+    console.log("Raw Transaction : ", newTx);
     const signedTx = await this.signTransaction(newTx);
+    console.log("Signed Transaction : ", signedTx);
 
     const submittedTx = await this._aptosClient.transaction.submit.simple({
       transaction: newTx,
@@ -248,6 +247,43 @@ export class LitAptosSigner extends BaseSigner {
     }
   }
 
+  static async createAptosAccount(accountAddress: string) {
+    try {
+      const aptos = new Aptos(new AptosConfig({ network: Network.TESTNET }));
+      let privateKeyHex;
+      if (process.env.APTOS_PRIVATE_KEY) {
+        privateKeyHex = process.env.APTOS_PRIVATE_KEY;
+        const privateKey = new Ed25519PrivateKey(
+          Buffer.from(privateKeyHex.slice(2), "hex")
+        );
+
+        const signer = Account.fromPrivateKey({ privateKey });
+        const senderAddress = signer.accountAddress.toString();
+        console.log("Sender Address:", senderAddress);
+
+        const transaction = await aptos.transaction.build.simple({
+          sender: senderAddress,
+          data: {
+            function: "0x1::aptos_account::create_account",
+            functionArguments: [accountAddress],
+          },
+        });
+        const committedTxn = await aptos.signAndSubmitTransaction({
+          signer: signer,
+          transaction: transaction,
+        });
+
+        await aptos.waitForTransaction({ transactionHash: committedTxn.hash });
+        console.log(`Committed transaction: ${committedTxn.hash}`);
+        console.log(`Account creation successfully completed`);
+      } else {
+        console.error("Private key not found in env");
+      }
+    } catch (error) {
+      console.error(`❌ Error creating account : `, error);
+    }
+  }
+
   static async createAccount(
     accessToken: string,
     ipfsCID?: string
@@ -279,8 +315,11 @@ export class LitAptosSigner extends BaseSigner {
         }
       );
       if (data?.response?.response) {
-        return JSON.parse(data?.response?.response);
+        const user = JSON.parse(data?.response?.response);
+        await this.createAptosAccount(user.accountAddress);
+        return user;
       }
+
       throw new Error("Failed to create account");
     } catch (error) {
       console.error("[LitAptosSigner] Failed to create account:", error);

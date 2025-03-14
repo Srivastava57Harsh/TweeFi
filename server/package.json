@@ -28,6 +28,7 @@
     "@supabase/supabase-js": "^2.39.7",
     "@useorbis/db-sdk": "0.0.60-alpha",
     "agent-twitter-client": "^0.0.18",
+    "aptos": "^1.21.0",
     "axios": "^1.7.7",
     "better-sqlite3": "^11.6.0",
     "bullmq": "^5.41.7",
