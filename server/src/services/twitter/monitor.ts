@@ -4,6 +4,8 @@ import { queueMention } from "../queue/index.js";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
+import { CacheService } from "../cache.service.js";
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -12,7 +14,8 @@ dotenv.config({
   path: resolve(__dirname, "../../../.env"),
 });
 
-let lastProcessedTweetTime = new Date();
+const cacheService = CacheService.getInstance();
+await cacheService.start();
 
 async function checkMentions(): Promise<void> {
   try {
@@ -36,36 +39,44 @@ async function checkMentions(): Promise<void> {
         continue;
       }
 
-      const timestamp = Number(tweet.timestamp) * 1000; // Convert seconds to milliseconds
-      const tweetTime = new Date(timestamp);
-
-      if (tweetTime <= lastProcessedTweetTime) {
+      // Check if tweet has already been processed
+      const tweetStatus = await cacheService.getTweetStatus(tweet.id);
+      if (tweetStatus === "processed" || tweetStatus === "processing") {
+        console.log(`⚠️ Skipping already ${tweetStatus} tweet ID: ${tweet.id}`);
         continue;
       }
+
+      // Set tweet status to 'processing'
+      await cacheService.setTweetStatus(tweet.id, "processing");
 
       console.log(`
 📥 New mention found:
 👤 From: @${tweet.username}
 💬 Text: ${tweet.text}
 🆔 Tweet ID: ${tweet.id}
-⏰ Time: ${tweetTime.toISOString()}
       `);
 
-      // Queue the mention for processing
-      await queueMention({
-        username: tweet.username,
-        text: tweet.text,
-        id: tweet.id,
-        userId: tweet.userId,
-      });
-      console.log(`✅ Queued mention from @${tweet.username} for processing`);
-    }
+      try {
+        // Queue the mention for processing
+        await queueMention({
+          username: tweet.username,
+          text: tweet.text,
+          id: tweet.id,
+          userId: tweet.userId,
+        });
+        console.log(`✅ Queued mention from @${tweet.username} for processing`);
 
-    // Update the last processed time
-    lastProcessedTweetTime = new Date();
-    console.log(
-      `⏱️ Updated last processed time to: ${lastProcessedTweetTime.toISOString()}`
-    );
+        // Set tweet status to 'processed'
+        await cacheService.setTweetStatus(tweet.id, "processed");
+      } catch (processingError) {
+        console.error(
+          `❌ Error processing tweet ID: ${tweet.id}`,
+          processingError
+        );
+
+        await cacheService.setTweetStatus(tweet.id, "error");
+      }
+    }
   } catch (error) {
     console.error("❌ Error checking mentions:", error);
   }
