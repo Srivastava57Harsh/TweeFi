@@ -110,10 +110,17 @@ export async function processMention(job: Job) {
 
       // Process mentions and replace with wallet addresses
       const {
-        text: processedText,
+        text: tempProcessedText,
         userMapping,
         unregisteredUsers,
       } = await replaceMentionsWithAddresses(text, mentions);
+
+      const processedText = tempProcessedText
+        .replace(
+          new RegExp(`@${me?.username || "higherthansudobot"}`, "gi"),
+          ""
+        )
+        .trim();
 
       if (unregisteredUsers.length > 0) {
         await sendPlayerCard(

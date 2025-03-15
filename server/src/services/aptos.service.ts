@@ -398,7 +398,7 @@ export class AptosService {
           You have access to various tools for interacting with the Aptos blockchain.
           When responding to requests:
           1. For balance inquiries: Use AptosBalanceTool and respond with "Your balance is X APT"
-          2. For transfers: Use AptosTransferTokenTool and respond with "Successfully transferred X APT to <address>"
+          2. For transfers: Use AptosTransferTokenTool. Ensure the username is used exactly as provided, including any special characters. Do not modify or remove any part of the username, keep in mind this response will be send as a tweet tagging the username. When responding, include only the link without any brackets or formatting. Respond in this format: "Successfully transferred X APT to @{username} 🎉 (or {wallet_address} if no username is available). Track the transaction here: https://explorer.aptoslabs.com/txn/{txn_id}?network=testnet"
           3. For errors: Provide clear error messages starting with "Sorry, "
           4. For token details: Use AptosGetTokenDetailTool and provide token information
           5. For transactions: Use AptosTransactionTool to get transaction details

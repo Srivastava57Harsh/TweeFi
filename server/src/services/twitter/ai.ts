@@ -31,7 +31,7 @@ export const getAIRecommendation = async (
         accessToken: accessToken,
       },
       {
-        timeout: 40000, // 40 second timeout
+        timeout: 90000, // 90 second timeout
         headers: {
           "Content-Type": "application/json",
         },
