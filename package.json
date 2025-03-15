@@ -21,7 +21,7 @@
     "letsgo": "pnpm i && pnpm run dev",
     "version": "auto-changelog -p && git add CHANGELOG.md",
     "release": "standard-version",
-    "prepare": "husky"
+    "prepare": "[ -z \"$CI\" ] && husky || echo 'Skipping husky in CI environment'"
   },
   "devDependencies": {
     "@ngrok/ngrok": "^1.4.1",
