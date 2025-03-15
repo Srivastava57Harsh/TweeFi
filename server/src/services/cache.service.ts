@@ -4,6 +4,7 @@ import { BaseService } from "./base.service.js";
 export class CacheService extends BaseService {
   private static instance: CacheService;
   private cache: Redis;
+  private readonly tweetStatusKey = "tweet_status";
 
   private constructor() {
     super();
@@ -63,5 +64,16 @@ export class CacheService extends BaseService {
       throw new Error("Cache client not initialized");
     }
     await this.cache.quit();
+  }
+
+  public async setTweetStatus(
+    tweetId: string,
+    status: string
+  ): Promise<number> {
+    return this.cache.hset(this.tweetStatusKey, tweetId, status);
+  }
+
+  public async getTweetStatus(tweetId: string): Promise<string | null> {
+    return this.cache.hget(this.tweetStatusKey, tweetId);
   }
 }
