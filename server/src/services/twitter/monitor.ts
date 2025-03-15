@@ -2,46 +2,53 @@ import { scraper } from "./scraper.js";
 import { SearchMode } from "agent-twitter-client";
 import { queueMention } from "../queue/index.js";
 import dotenv from "dotenv";
-import { fileURLToPath } from "url";
-import { dirname, resolve } from "path";
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import { CacheService } from "../cache.service.js";
+dotenv.config();
 
-// Load environment variables from root .env file
-dotenv.config({
-  path: resolve(__dirname, "../../../.env"),
-});
+const cacheService = CacheService.getInstance();
 
-let lastProcessedTweetTime = new Date();
+async function getLastProcessedTime(): Promise<Date> {
+  try {
+    const cachedTime = await cacheService.get<string>("lastProcessedTweetTime");
+    return cachedTime ? new Date(cachedTime) : new Date();
+  } catch (error) {
+    console.error("⚠️ Failed to fetch last processed time from Redis:", error);
+    return new Date();
+  }
+}
+
+async function setLastProcessedTime(time: Date): Promise<void> {
+  try {
+    await cacheService.set("lastProcessedTweetTime", time.toISOString(), 86400);
+  } catch (error) {
+    console.error("⚠️ Failed to update last processed time in Redis:", error);
+  }
+}
 
 async function checkMentions(): Promise<void> {
   try {
     console.log("\n🔍 Checking for new mentions...");
+
     const query = `@${process.env.TWITTER_USERNAME}`;
     const maxMentions = 20;
+
+    let lastProcessedTweetTime = await getLastProcessedTime();
 
     for await (const tweet of scraper.searchTweets(
       query,
       maxMentions,
       SearchMode.Latest
     )) {
-      // Skip our own tweets
-      if (tweet.username === process.env.TWITTER_USERNAME) {
-        continue;
-      }
+      if (tweet.username === process.env.TWITTER_USERNAME) continue;
 
-      // Skip tweets without required data
       if (!tweet.id || !tweet.text || !tweet.username || !tweet.userId) {
         console.log("⚠️ Skipping tweet with missing data");
         continue;
       }
 
-      const timestamp = Number(tweet.timestamp) * 1000; // Convert seconds to milliseconds
-      const tweetTime = new Date(timestamp);
+      const tweetTime = new Date(Number(tweet.timestamp) * 1000);
 
-      if (tweetTime <= lastProcessedTweetTime) {
-        continue;
-      }
+      if (tweetTime <= lastProcessedTweetTime) continue;
 
       console.log(`
 📥 New mention found:
@@ -51,18 +58,19 @@ async function checkMentions(): Promise<void> {
 ⏰ Time: ${tweetTime.toISOString()}
       `);
 
-      // Queue the mention for processing
       await queueMention({
         username: tweet.username,
         text: tweet.text,
         id: tweet.id,
         userId: tweet.userId,
       });
+
       console.log(`✅ Queued mention from @${tweet.username} for processing`);
+
+      lastProcessedTweetTime = tweetTime;
+      await setLastProcessedTime(lastProcessedTweetTime);
     }
 
-    // Update the last processed time
-    lastProcessedTweetTime = new Date();
     console.log(
       `⏱️ Updated last processed time to: ${lastProcessedTweetTime.toISOString()}`
     );
@@ -71,9 +79,7 @@ async function checkMentions(): Promise<void> {
   }
 }
 
-// Export the monitor function
 export const startMentionMonitor = () => {
   console.log("🤖 Starting mention monitor...");
-  // Check every 10 seconds
   setInterval(checkMentions, 10000);
 };
