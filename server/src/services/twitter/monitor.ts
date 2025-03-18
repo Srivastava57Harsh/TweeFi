@@ -20,7 +20,8 @@ await cacheService.start();
 async function checkMentions(): Promise<void> {
   try {
     console.log("\n🔍 Checking for new mentions...");
-    const query = `@${process.env.TWITTER_USERNAME}`;
+    const query = `to:${process.env.TWITTER_USERNAME} -is:retweet`;
+    console.log("Query: %s", query);
     const maxMentions = 20;
 
     for await (const tweet of scraper.searchTweets(

@@ -169,6 +169,7 @@ export async function processMention(job: Job) {
     }
   } catch (error) {
     console.error(`❌ Failed to process mention from @${username}:`, error);
+    await CacheService.getInstance().setTweetStatus(tweetId, "error");
     throw error; // Let BullMQ handle the retry
   }
 }
