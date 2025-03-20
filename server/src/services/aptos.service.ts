@@ -25,8 +25,14 @@ import { resolve } from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import fs from "fs";
-
 import dotenv from "dotenv";
+import axios, { AxiosInstance } from "axios";
+import { getCollablandApiUrl } from "../utils.js";
+import { CreateAptosAccountResponse } from "src/types.js";
+import { isAxiosError } from "axios";
+import { TwitterUserService } from "./twitter-user.service.js";
+// import { AptosBatchTransferTool } from "../tools/batchedTransaction.js";
+
 // Convert ESM module URL to filesystem path
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -35,11 +41,6 @@ const __dirname = dirname(__filename);
 dotenv.config({
   path: resolve(__dirname, "../../../.env"),
 });
-import axios, { AxiosInstance } from "axios";
-import { getCollablandApiUrl } from "../utils.js";
-import { CreateAptosAccountResponse } from "src/types.js";
-import { isAxiosError } from "axios";
-import { TwitterUserService } from "./twitter-user.service.js";
 
 export type SignedTransactionResponse = {
   senderAuthenticator: AccountAuthenticator;
@@ -378,8 +379,11 @@ export class AptosService {
       const agent = new AgentRuntime(signer, this.aptos, {
         OPENAI_API_KEY: process.env.OPENAI_API_KEY,
       });
-
       const tools = createAptosTools(agent);
+      // const tools = [
+      //   ...createAptosTools(agent),
+      //   new AptosBatchTransferTool(agent),
+      // ];
       console.log(
         "Aptos tools created for user:",
         tools.map((t) => t.name).join(", ")
@@ -398,10 +402,11 @@ export class AptosService {
           You have access to various tools for interacting with the Aptos blockchain.
           When responding to requests:
           1. For balance inquiries: Use AptosBalanceTool and respond with "Your balance is X APT"
-          2. For transfers: Use AptosTransferTokenTool. Ensure the username is used exactly as provided, including any special characters. Do not modify or remove any part of the username, keep in mind this response will be send as a tweet tagging the username. When responding, include only the link without any brackets or formatting. Respond in this format: "Successfully transferred X APT to @{username} 🎉 (or {wallet_address} if no username is available). Track the transaction here: https://explorer.aptoslabs.com/txn/{txn_id}?network=testnet"
+          2. For transfers: Respond in this format: "Successfully transferred X APT to the given wallet address or addresses(whichever is appropriate). Track the transaction here: https://explorer.aptoslabs.com/txn/{txn_id}?network=testnet (mention all the transaciton hash here). No need to mention the usernames or wallet addresses to which you are transferring"
           3. For errors: Provide clear error messages starting with "Sorry, "
           4. For token details: Use AptosGetTokenDetailTool and provide token information
           5. For transactions: Use AptosTransactionTool to get transaction details
+          6. If more than one recipient is given for transfer then do the excecution one by one, like after the completion of a pending transaction start transferring to the other transaction, give the transaction hash for all the recipients in the last agent response, i.e. last response from agent should surely contain all the transaction hashes even from previous transactions, it should appear like this : "Successfully transferred X APT to the given wallet addresses. Track the transaction here: https://explorer.aptoslabs.com/txn/{txn_id_!}?network=testnet and https://explorer.aptoslabs.com/txn/{txn_id_2}?network=testnet and etc  (mention all the transaciton hash here), don't use any brackets or anything just the hash. No need to mention the usernames or wallet addresses to which you are transferring"
           
           Always be precise and include relevant details in your responses.
           If you encounter any errors, explain what went wrong clearly.

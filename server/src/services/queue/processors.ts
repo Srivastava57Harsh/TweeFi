@@ -111,7 +111,7 @@ export async function processMention(job: Job) {
       // Process mentions and replace with wallet addresses
       const {
         text: tempProcessedText,
-        userMapping,
+        // userMapping,
         unregisteredUsers,
       } = await replaceMentionsWithAddresses(text, mentions);
 
@@ -132,14 +132,14 @@ export async function processMention(job: Job) {
         return;
       }
       // Construct a mapping string for AI
-      const formattedUsers = userMapping
-        .map(({ username, address }) => `@${username} (${address})`)
-        .join(", ");
+      // const formattedUsers = userMapping
+      //   .map(({ username, address }) => `@${username} (${address})`)
+      //   .join(", ");
 
       // Get AI recommendation with processed text
 
       const recommendation = await getAIRecommendation(
-        `Processed text: ${processedText}. User details: ${formattedUsers}.`,
+        `Processed text: ${processedText}.`,
         userId,
         accessToken
       );

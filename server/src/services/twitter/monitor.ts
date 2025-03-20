@@ -42,7 +42,6 @@ async function checkMentions(): Promise<void> {
       // Check if tweet has already been processed
       const tweetStatus = await cacheService.getTweetStatus(tweet.id);
       if (tweetStatus === "processed" || tweetStatus === "processing") {
-        console.log(`⚠️ Skipping already ${tweetStatus} tweet ID: ${tweet.id}`);
         continue;
       }
 
