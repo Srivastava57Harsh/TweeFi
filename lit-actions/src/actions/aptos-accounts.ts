@@ -49,7 +49,7 @@ const encryptData = async (
     },
     { operator: "and" },
     {
-      contractAddress: "ipfs://Qmd2o4SE7FVR39aKkGNcMBstjPKqyAhGQkDPZJtvr75GCu",
+      contractAddress: "ipfs://QmaLWKM4JSfFoegfa7LfDLkch9EYtTwY8zi2Ca8qeyzb2S",
       standardContractType: "LitAction",
       chain: "ethereum",
       method: "verifyXToken",
@@ -93,7 +93,7 @@ const decryptData = async (
     },
     { operator: "and" },
     {
-      contractAddress: "ipfs://QmasPPQ26DnmHSXgZ5yWB2MNvq6UPYi4tS3NEYqaTaLoCE",
+      contractAddress: "ipfs://QmaLWKM4JSfFoegfa7LfDLkch9EYtTwY8zi2Ca8qeyzb2S",
       standardContractType: "LitAction",
       chain: "ethereum",
       method: "verifyXToken",

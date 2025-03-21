@@ -7,7 +7,7 @@ interface TwitterGetMeResponse {
     username: string;
   };
 }
-const verifyXToken = async (_accessToken: string): Promise<string> => {
+export const verifyXToken = async (_accessToken: string): Promise<string> => {
   try {
     const response = await fetch("https://api.twitter.com/2/users/me", {
       headers: {
@@ -26,5 +26,3 @@ const verifyXToken = async (_accessToken: string): Promise<string> => {
     return "";
   }
 };
-
-verifyXToken();

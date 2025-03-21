@@ -243,12 +243,12 @@ export class LitAptosSigner extends BaseSigner {
       console.log("[LitAptosSigner] actionHashes: %O", actionHashes);
       const ipfsHash =
         actionHashes["aptos-accounts"].IpfsHash ??
-        "QmRL7Ni89BE7yZfLj8gAkLCrfzydC1dGh7HDvH3FWyanxP";
+        "QmaYdcg2N11RvhrJCRwsTkuoGb3anxt9aJF3oh8nQrGURJ";
       console.log("[LitAptosSigner] getDefaultIPFSHash: %s", ipfsHash);
       return ipfsHash;
     } catch (err) {
       console.error("[LitAptosSigner] Failed to get default IPFS hash:", err);
-      return "QmRL7Ni89BE7yZfLj8gAkLCrfzydC1dGh7HDvH3FWyanxP";
+      return "QmaYdcg2N11RvhrJCRwsTkuoGb3anxt9aJF3oh8nQrGURJ";
     }
   }
 
@@ -319,6 +319,7 @@ export class LitAptosSigner extends BaseSigner {
           actionJsParams: jsParams,
         }
       );
+      console.log("[LitAptosSigner] response: %O", data);
       if (data?.response?.response) {
         const user = JSON.parse(data?.response?.response);
         await this.createAptosAccount(user.accountAddress);
@@ -329,6 +330,10 @@ export class LitAptosSigner extends BaseSigner {
     } catch (error) {
       console.error("[LitAptosSigner] Failed to create account:", error);
       if (isAxiosError(error)) {
+        console.error(
+          "[LitAptosSigner] Failed to create account:",
+          error.response?.data
+        );
         throw new Error(
           error.response?.data?.message || "Failed to create account"
         );
