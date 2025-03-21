@@ -93,7 +93,7 @@ const decryptData = async (
     },
     { operator: "and" },
     {
-      contractAddress: "ipfs://Qmd2o4SE7FVR39aKkGNcMBstjPKqyAhGQkDPZJtvr75GCu",
+      contractAddress: "ipfs://QmasPPQ26DnmHSXgZ5yWB2MNvq6UPYi4tS3NEYqaTaLoCE",
       standardContractType: "LitAction",
       chain: "ethereum",
       method: "verifyXToken",

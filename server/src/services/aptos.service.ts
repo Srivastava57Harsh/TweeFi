@@ -31,7 +31,8 @@ import { getCollablandApiUrl } from "../utils.js";
 import { CreateAptosAccountResponse } from "src/types.js";
 import { isAxiosError } from "axios";
 import { TwitterUserService } from "./twitter-user.service.js";
-// import { AptosBatchTransferTool } from "../tools/batchedTransaction.js";
+import { AptosCreateTokenTool } from "../tools/createToken.js";
+import { AptosBatchTransferTool } from "../tools/batchedTransaction.js";
 
 // Convert ESM module URL to filesystem path
 const __filename = fileURLToPath(import.meta.url);
@@ -152,6 +153,9 @@ export class LitAptosSigner extends BaseSigner {
       };
     } catch (error) {
       console.error("[LitAptosSigner] Failed to sign transaction:", error);
+      if (isAxiosError(error)) {
+        console.error("[LitAptosSigner] Axios error:", error.response?.data);
+      }
       throw error;
     }
   }
@@ -239,12 +243,12 @@ export class LitAptosSigner extends BaseSigner {
       console.log("[LitAptosSigner] actionHashes: %O", actionHashes);
       const ipfsHash =
         actionHashes["aptos-accounts"].IpfsHash ??
-        "QmTr5getv69DyRLkvgZcAb5sacjtuWgWohiC7kjw3geFD7";
+        "QmRL7Ni89BE7yZfLj8gAkLCrfzydC1dGh7HDvH3FWyanxP";
       console.log("[LitAptosSigner] getDefaultIPFSHash: %s", ipfsHash);
       return ipfsHash;
     } catch (err) {
       console.error("[LitAptosSigner] Failed to get default IPFS hash:", err);
-      return "QmTr5getv69DyRLkvgZcAb5sacjtuWgWohiC7kjw3geFD7";
+      return "QmRL7Ni89BE7yZfLj8gAkLCrfzydC1dGh7HDvH3FWyanxP";
     }
   }
 
@@ -379,11 +383,16 @@ export class AptosService {
       const agent = new AgentRuntime(signer, this.aptos, {
         OPENAI_API_KEY: process.env.OPENAI_API_KEY,
       });
-      const tools = createAptosTools(agent);
-      // const tools = [
-      //   ...createAptosTools(agent),
-      //   new AptosBatchTransferTool(agent),
-      // ];
+      let defaultTools = createAptosTools(agent);
+      // remove the pre-defined aptos_create_token tool
+      defaultTools = defaultTools.filter(
+        (t) => t.name !== "aptos_create_token"
+      );
+      const tools = [
+        ...defaultTools,
+        new AptosBatchTransferTool(agent),
+        new AptosCreateTokenTool(agent),
+      ];
       console.log(
         "Aptos tools created for user:",
         tools.map((t) => t.name).join(", ")
@@ -402,12 +411,13 @@ export class AptosService {
           You have access to various tools for interacting with the Aptos blockchain.
           When responding to requests:
           1. For balance inquiries: Use AptosBalanceTool and respond with "Your balance is X APT"
-          2. For transfers: Respond in this format: "Successfully transferred X APT to the given wallet address or addresses(whichever is appropriate). Track the transaction here: https://explorer.aptoslabs.com/txn/{txn_id}?network=testnet (mention all the transaciton hash here). No need to mention the usernames or wallet addresses to which you are transferring"
+          2. For transfers: Respond in this format: "Successfully transferred X APT to the given wallet address or addresses(whichever is appropriate). Track the transaction here: https://explorer.aptoslabs.com/txn/{txn_id}?network=testnet (mention all the transaction hash here). No need to mention the usernames or wallet addresses to which you are transferring"
           3. For errors: Provide clear error messages starting with "Sorry, "
           4. For token details: Use AptosGetTokenDetailTool and provide token information
           5. For transactions: Use AptosTransactionTool to get transaction details
-          6. If more than one recipient is given for transfer then do the excecution one by one, like after the completion of a pending transaction start transferring to the other transaction, give the transaction hash for all the recipients in the last agent response, i.e. last response from agent should surely contain all the transaction hashes even from previous transactions, it should appear like this : "Successfully transferred X APT to the given wallet addresses. Track the transaction here: https://explorer.aptoslabs.com/txn/{txn_id_!}?network=testnet and https://explorer.aptoslabs.com/txn/{txn_id_2}?network=testnet and etc  (mention all the transaciton hash here), don't use any brackets or anything just the hash. No need to mention the usernames or wallet addresses to which you are transferring"
-          
+          6. If more than one recipient is given for transfer then do the execution one by one, like after the completion of a pending transaction start transferring to the other transaction, give the transaction hash for all the recipients in the last agent response, i.e. last response from agent should surely contain all the transaction hashes even from previous transactions, it should appear like this : "Successfully transferred X APT to the given wallet addresses. Track the transaction here: https://explorer.aptoslabs.com/txn/{txn_id_!}?network=testnet and https://explorer.aptoslabs.com/txn/{txn_id_2}?network=testnet and etc  (mention all the transaction hash here), don't use any brackets or anything just the hash. No need to mention the usernames or wallet addresses to which you are transferring"
+          7. For token creation: Use AptosCreateTokenTool to create a new token
+
           Always be precise and include relevant details in your responses.
           If you encounter any errors, explain what went wrong clearly.
           Log all tool usage and their results.

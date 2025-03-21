@@ -26,3 +26,5 @@ const verifyXToken = async (_accessToken: string): Promise<string> => {
     return "";
   }
 };
+
+verifyXToken();
