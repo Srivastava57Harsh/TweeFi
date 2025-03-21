@@ -26,7 +26,8 @@ async function checkMentions(): Promise<void> {
       new Date(Number(lastTweetFetchedAt)).toLocaleString()
     );
     const timeSinceLastFetch = Date.now() - Number(lastTweetFetchedAt);
-    if (Number(lastTweetFetchedAt) > 0 && timeSinceLastFetch < 15 * 60 * 1000) {
+    if (Number(lastTweetFetchedAt) > 0 && timeSinceLastFetch < 16 * 60 * 1000) {
+      // keeping 1 minute more as buffer
       console.log(
         `🔍 Skipping check for new mentions... [Time since last fetch: ${Math.round(timeSinceLastFetch / 1000)}s]`
       );
