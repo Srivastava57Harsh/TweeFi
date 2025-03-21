@@ -1,10 +1,11 @@
-import { scraper } from "./scraper.js";
-import { SearchMode } from "agent-twitter-client";
+// import { scraper } from "./scraper.js";
+// import { SearchMode } from "agent-twitter-client";
 import { queueMention } from "../queue/index.js";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
 import { CacheService } from "../cache.service.js";
+import { TwitterService } from "../twitter.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -19,16 +20,27 @@ await cacheService.start();
 
 async function checkMentions(): Promise<void> {
   try {
+    const lastTweetFetchedAt = await cacheService.get("last_tweet_fetched_at");
+    console.log(
+      "Last tweet fetched at:",
+      new Date(Number(lastTweetFetchedAt)).toLocaleString()
+    );
+    const timeSinceLastFetch = Date.now() - Number(lastTweetFetchedAt);
+    if (Number(lastTweetFetchedAt) > 0 && timeSinceLastFetch < 15 * 60 * 1000) {
+      console.log(
+        `🔍 Skipping check for new mentions... [Time since last fetch: ${Math.round(timeSinceLastFetch / 1000)}s]`
+      );
+      return;
+    }
     console.log("\n🔍 Checking for new mentions...");
-    const query = `to:${process.env.TWITTER_USERNAME} -is:retweet`;
-    console.log("Query: %s", query);
-    const maxMentions = 20;
+    // const query = `to:${process.env.TWITTER_USERNAME} -is:retweet`;
+    // console.log("Query: %s", query);
+    // const maxMentions = 50;
 
-    for await (const tweet of scraper.searchTweets(
-      query,
-      maxMentions,
-      SearchMode.Latest
-    )) {
+    const v2Scraper = await TwitterService.getInstance();
+
+    for await (const tweet of v2Scraper.getMentions()) {
+      console.log("Fetched:", tweet.id);
       // Skip our own tweets
       if (tweet.username === process.env.TWITTER_USERNAME) {
         continue;
@@ -85,6 +97,6 @@ async function checkMentions(): Promise<void> {
 // Export the monitor function
 export const startMentionMonitor = () => {
   console.log("🤖 Starting mention monitor...");
-  // Check every 10 seconds
-  setInterval(checkMentions, 10000);
+  // Check every 30 seconds
+  setInterval(checkMentions, 30 * 1000);
 };
