@@ -1,7 +1,7 @@
 # TweeFi: Invisible On-Chain Transactions via Social AI
 
 <div align="center">
-  <img src="./assets/tweefi-icon.png" alt="TweeFi Logo" width="200"/>
+  <img src="https://github.com/user-attachments/assets/7b00c57c-75d9-479b-b240-649010997070" alt="TweeFi Logo" width="200"/>
   <br>
   <h3>Making Web3 as easy as tweeting</h3>
 </div>
@@ -21,7 +21,7 @@ Check out our demo video: [TweeFi Demo on YouTube](https://youtu.be/hxG-diHzMBk)
 ## 🏗️ Architecture
 
 <div align="center">
-  <img src="./assets/tweefi-arch.png" alt="TweeFi Architecture" width="800"/>
+  <img src="https://github.com/user-attachments/assets/1967fc00-3994-4eb8-a296-88a9b2dad9f0" alt="TweeFi Architecture" width="800"/>
 </div>
 
 ## 💡 What We're Building
