@@ -8,11 +8,13 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { Wallet, ExternalLink, Copy, Check } from "lucide-react";
 
 interface TwitterProfile {
   data: {
@@ -31,7 +33,7 @@ interface TwitterProfile {
 }
 
 export default function SuccessPage() {
-  const { tokenId } = useParams(); //basically being used as an action handler, can be signup or login
+  const { tokenId } = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
   const [profile, setProfile] = useState<TwitterProfile | null>(null);
@@ -41,6 +43,7 @@ export default function SuccessPage() {
   const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [isTweeting, setIsTweeting] = useState(false);
   const [tweetUrl, setTweetUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const fetchTwitterProfile = async () => {
@@ -77,7 +80,7 @@ export default function SuccessPage() {
     };
 
     fetchTwitterProfile();
-  }, [searchParams]);
+  }, [searchParams, router, tokenId]);
 
   const handleCreateAptosAccount = async () => {
     if (!profile) return;
@@ -144,80 +147,143 @@ export default function SuccessPage() {
     }
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const truncateAddress = (address: string) => {
+    return `${address.substring(0, 6)}...${address.substring(address.length - 6)}`;
+  };
+
+  // Show loading state for the entire card when creating account
+  if (isCreatingAccount) {
+    return (
+      <div className="flex items-center justify-center w-full h-full min-h-[500px] bg-black">
+        <Card className="w-full max-w-[400px] border-0 bg-zinc-900 shadow-xl">
+          <CardContent className="pt-6 pb-6">
+            <div className="text-center py-8">
+              <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center mx-auto mb-6">
+                <span className="text-white font-bold text-lg">TF</span>
+              </div>
+              <div className="h-12 w-12 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-white mb-2">
+                Creating Your Wallet
+              </h3>
+              <p className="text-zinc-400 text-sm">
+                Setting up your Aptos account...
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto flex flex-col items-center justify-center min-h-screen p-4 space-y-4">
+    <div className="flex items-center justify-center w-full h-full min-h-[500px] bg-black">
       {!aptosAccount && (
-        <Card className="w-full max-w-md bg-white border-gray-200">
-          <CardHeader className="bg-white">
-            <CardTitle>Twitter Authentication Success</CardTitle>
-            <CardDescription>
+        <Card className="w-full max-w-[400px] border-0 bg-zinc-900 shadow-xl overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+          <CardHeader className="border-b border-zinc-800 pb-4">
+            <div className="flex items-center justify-center mb-2">
+              <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
+                <span className="text-white font-bold text-lg">TF</span>
+              </div>
+            </div>
+            <CardTitle className="text-center text-white">
+              Authentication Success
+            </CardTitle>
+            <CardDescription className="text-center text-blue-400">
               {tokenId === "login"
                 ? "Login successful, you can now close the window!"
                 : "Create your Aptos wallet to get started"}
             </CardDescription>
           </CardHeader>
-          <CardContent className="bg-white">
+          <CardContent className="pt-4">
             {error ? (
-              <div className="text-red-500">{error}</div>
+              <div className="p-3 bg-red-900/30 border border-red-800 rounded-lg text-red-400 text-center text-sm">
+                {error}
+              </div>
             ) : isLoading ? (
-              <Card className="border-2 bg-white">
-                <CardContent className="pt-6">
-                  <div className="space-y-6">
-                    <div className="text-sm text-center text-gray-500">
+              <Card className="border border-zinc-800 shadow-sm bg-zinc-900">
+                <CardContent className="pt-4">
+                  <div className="space-y-4">
+                    <div className="text-sm text-center text-zinc-400">
                       Loading your profile details...
                     </div>
                     <div className="space-y-4">
                       <div className="flex items-center space-x-4">
-                        <Skeleton className="h-12 w-12 rounded-full" />
+                        <Skeleton className="h-12 w-12 rounded-full bg-zinc-800" />
                         <div className="space-y-2">
-                          <Skeleton className="h-4 w-[200px]" />
-                          <Skeleton className="h-4 w-[150px]" />
+                          <Skeleton className="h-4 w-[180px] bg-zinc-800" />
+                          <Skeleton className="h-4 w-[140px] bg-zinc-800" />
                         </div>
                       </div>
-                      <Skeleton className="h-20 w-full" />
+                      <Skeleton className="h-16 w-full bg-zinc-800" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
             ) : profile ? (
-              <Card className="border-2 bg-white">
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-4">
+              <Card className="border border-zinc-800 shadow-sm bg-zinc-900">
+                <CardContent className="pt-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center space-x-3">
                       {profile.data.profile_image_url && (
-                        <Image
-                          src={profile.data.profile_image_url}
-                          alt={profile.data.name}
-                          className="h-12 w-12 rounded-full"
-                          width={100}
-                          height={100}
-                        />
+                        <div className="relative h-12 w-12 rounded-full overflow-hidden border-2 border-zinc-700">
+                          <Image
+                            src={
+                              profile.data.profile_image_url ||
+                              "/placeholder.svg"
+                            }
+                            alt={profile.data.name}
+                            className="object-cover"
+                            fill
+                            sizes="48px"
+                          />
+                        </div>
                       )}
                       <div>
-                        <div className="font-medium">{profile.data.name}</div>
-                        <div className="text-sm text-gray-500">
+                        <div className="font-medium text-white flex items-center gap-1">
+                          {profile.data.name}
+                          {profile.data.verified && (
+                            <span className="inline-flex items-center justify-center bg-blue-500 text-white rounded-full h-4 w-4">
+                              <Check className="h-3 w-3" />
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-sm text-zinc-400">
                           @{profile.data.username}
                         </div>
                       </div>
                     </div>
                     {profile.data.description && (
-                      <p className="text-sm text-gray-700">
+                      <p className="text-xs text-zinc-300 border-t border-b border-zinc-800 py-2">
                         {profile.data.description}
                       </p>
                     )}
                     {profile.data.public_metrics && (
-                      <div className="flex justify-between text-sm text-gray-500">
-                        <span>
-                          {profile.data.public_metrics.followers_count}{" "}
-                          followers
-                        </span>
-                        <span>
-                          {profile.data.public_metrics.following_count}{" "}
-                          following
-                        </span>
-                        <span>
-                          {profile.data.public_metrics.tweet_count} tweets
-                        </span>
+                      <div className="flex justify-between text-xs text-zinc-400 bg-zinc-800/50 p-2 rounded-lg">
+                        <div className="flex flex-col items-center">
+                          <span className="font-semibold text-white">
+                            {profile.data.public_metrics.followers_count.toLocaleString()}
+                          </span>
+                          <span className="text-[10px]">Followers</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <span className="font-semibold text-white">
+                            {profile.data.public_metrics.following_count.toLocaleString()}
+                          </span>
+                          <span className="text-[10px]">Following</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <span className="font-semibold text-white">
+                            {profile.data.public_metrics.tweet_count.toLocaleString()}
+                          </span>
+                          <span className="text-[10px]">Posts</span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -225,118 +291,116 @@ export default function SuccessPage() {
               </Card>
             ) : null}
           </CardContent>
-        </Card>
-      )}
-
-      {profile && !aptosAccount && (
-        <>
-          {tokenId === "login" ? (
-            <Button
-              disabled={true}
-              className="px-4 py-2 bg-green-500 text-white rounded disabled:bg-green-500 disabled:opacity-100"
-            >
-              Login Successful
-            </Button>
-          ) : (
-            <Button
-              onClick={handleCreateAptosAccount}
-              disabled={isCreatingAccount}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400"
-            >
-              {isCreatingAccount
-                ? "Creating Account..."
-                : "Create Aptos Account"}
-            </Button>
+          {profile && tokenId !== "login" && (
+            <CardFooter className="flex justify-center pb-4">
+              <Button
+                onClick={handleCreateAptosAccount}
+                disabled={isCreatingAccount}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-full shadow-lg shadow-blue-900/20 border border-blue-700/20 transition-all duration-200"
+              >
+                <Wallet className="mr-2 h-4 w-4" />
+                Create Aptos Wallet
+              </Button>
+            </CardFooter>
           )}
-        </>
-      )}
-
-      {isCreatingAccount && (
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <Skeleton className="h-6 w-[300px] mx-auto" />
-              <p className="mt-2 text-gray-500">
-                Creating your Aptos account...
-              </p>
-            </div>
-          </CardContent>
         </Card>
       )}
 
       {aptosAccount && (
-        <Card className="w-full max-w-md">
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-4">
-                <div className="flex flex-col space-y-2 text-center">
-                  <div className="text-xl">
-                    🎊 Wallet Created Successfully! 🎊
-                  </div>
-                  <div className="text-sm text-gray-700 font-semibold mt-2">
+        <Card className="w-full max-w-[400px] border-0 bg-zinc-900 shadow-xl overflow-hidden">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
+          <CardHeader className="border-b border-zinc-800 pb-4">
+            <div className="flex items-center justify-center mb-2">
+              <div className="h-12 w-12 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
+                <span className="text-white font-bold text-lg">TF</span>
+              </div>
+            </div>
+            <CardTitle className="text-center text-white">
+              Wallet Created!
+            </CardTitle>
+            <CardDescription className="text-center text-blue-400">
+              Your Aptos account is ready to use
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4 pb-2">
+            <div className="space-y-3">
+              <div className="rounded-lg border border-zinc-800 bg-zinc-800/30 p-3">
+                <div className="flex flex-col space-y-2">
+                  <div className="text-xs text-zinc-400 font-medium">
                     Aptos Account Address:
                   </div>
-                  <div className="break-all text-sm">
-                    <a
-                      href={`https://explorer.aptoslabs.com/account/${aptosAccount}?network=testnet`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline"
-                    >
-                      {aptosAccount}
-                    </a>
+                  <div className="flex items-center justify-between bg-zinc-900 p-2 rounded-lg border border-zinc-700">
+                    <div className="text-xs text-zinc-300 font-mono">
+                      {truncateAddress(aptosAccount)}
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => copyToClipboard(aptosAccount)}
+                        className="p-1 rounded-md hover:bg-zinc-800 transition-colors"
+                        title="Copy address"
+                      >
+                        {copied ? (
+                          <Check className="h-3.5 w-3.5 text-green-400" />
+                        ) : (
+                          <Copy className="h-3.5 w-3.5 text-zinc-400" />
+                        )}
+                      </button>
+                      <a
+                        href={`https://explorer.aptoslabs.com/account/${aptosAccount}?network=testnet`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1 rounded-md hover:bg-zinc-800 transition-colors"
+                        title="View on explorer"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5 text-zinc-400" />
+                      </a>
+                    </div>
                   </div>
 
                   {!tweetUrl ? (
                     <Button
                       onClick={handleTweet}
                       disabled={isTweeting}
-                      className="mt-4 bg-[#1DA1F2] hover:bg-[#1a8cd8] text-white"
+                      className="mt-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-full shadow-lg shadow-blue-900/20 border border-blue-700/20 transition-all duration-200"
                     >
                       {isTweeting ? (
-                        <div className="flex items-center space-x-2">
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                          <span>Sending Tweet...</span>
+                        <div className="flex items-center space-x-2 py-0.5">
+                          <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          <span className="text-sm">Posting...</span>
                         </div>
                       ) : (
-                        <div className="flex items-center space-x-2">
-                          <svg
-                            className="h-5 w-5"
-                            fill="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
-                          </svg>
-                          <span>Share on Twitter</span>
+                        <div className="flex items-center space-x-2 py-0.5">
+                          <span className="text-sm">Share on X</span>
                         </div>
                       )}
                     </Button>
                   ) : (
-                    <Button
-                      onClick={() => window.open(tweetUrl, "_blank")}
-                      className="mt-4 bg-[#1DA1F2] hover:bg-[#1a8cd8] text-white"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <svg
-                          className="h-5 w-5"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
-                        </svg>
-                        <span>View Tweet</span>
+                    <div className="space-y-2 mt-2">
+                      <div className="text-xs text-green-400 bg-green-900/30 p-2 rounded-lg border border-green-800/50 flex items-center">
+                        <Check className="h-3.5 w-3.5 mr-1.5" />
+                        Post sent successfully!
                       </div>
-                    </Button>
-                  )}
-                  {tweetUrl && (
-                    <div className="text-sm text-green-500 mt-2">
-                      🎉 Tweet sent successfully!
+                      <Button
+                        onClick={() => window.open(tweetUrl, "_blank")}
+                        className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-full shadow-lg shadow-blue-900/20 border border-blue-700/20 transition-all duration-200"
+                      >
+                        <div className="flex items-center space-x-2 py-0.5">
+                          <ExternalLink className="h-3.5 w-3.5" />
+                          <span className="text-sm">View Post</span>
+                        </div>
+                      </Button>
                     </div>
                   )}
                 </div>
               </div>
             </div>
           </CardContent>
+          <CardFooter className="border-t border-zinc-800 pt-2 pb-3 flex justify-center">
+            <p className="text-[10px] text-zinc-500 text-center max-w-xs">
+              Your wallet is now connected to your account. You can use TweeFi
+              to interact with your Aptos wallet directly from X.
+            </p>
+          </CardFooter>
         </Card>
       )}
     </div>

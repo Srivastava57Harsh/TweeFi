@@ -33,10 +33,20 @@ export default function InterstitialPage() {
   }, [searchParams]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-white">
-      <div className="text-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#1DA1F2] border-t-transparent mx-auto mb-4" />
-        <p className="text-sm text-gray-600">Completing authentication...</p>
+    <div className="flex items-center justify-center w-full h-full min-h-[500px] bg-black">
+      <div className="text-center bg-zinc-900 p-6 rounded-xl shadow-xl border border-zinc-800 max-w-sm w-full">
+        <div className="flex justify-center mb-6">
+          <div className="h-14 w-14 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 flex items-center justify-center">
+            <span className="text-white font-bold text-lg">TF</span>
+          </div>
+        </div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-white border-t-transparent mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-white mb-2">
+          Authentication in Progress
+        </h3>
+        <p className="text-sm text-zinc-400">
+          We are securely connecting your account...
+        </p>
       </div>
     </div>
   );

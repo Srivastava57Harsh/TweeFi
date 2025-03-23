@@ -4,8 +4,8 @@ import { Inter } from "next/font/google";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "Collab.Land Starter Kit",
-  description: "Get started with Collab.Land",
+  title: "TweeFi",
+  description: "Get started with TweeFi",
 };
 
 export default function RootLayout({
