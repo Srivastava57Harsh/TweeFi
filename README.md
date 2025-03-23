@@ -1,11 +1,13 @@
-# TweeFi: Invisible On-Chain Transactions via Social AI
+
 
 <div align="center">
   <img src="https://github.com/user-attachments/assets/7b00c57c-75d9-479b-b240-649010997070" alt="TweeFi Logo" width="200"/>
   <br>
-  <h3>Making Web3 as easy as tweeting</h3>
+  <small><strong><i>Making Web3 as easy as tweeting</i></strong></small>
 </div>
 
+
+# TweeFi: Invisible On-Chain Transactions via Social AI
 ## 🚀 Introduction
 
 TweeFi (@tweefi) is an **AI-powered on-chain agent** that enables **seamless crypto tipping, fair token launches, and DeFi operations—all from within Twitter (X)**.
