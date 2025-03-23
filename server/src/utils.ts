@@ -69,7 +69,7 @@ export const getCardHTML = (botUsername: string, claimURL: string) => {
 	<meta name="twitter:title" content="Create Your Aptos Wallet" />
 	<meta name="twitter:description"
 		content="Create your Aptos wallet with just a few clicks using Twitter authentication" />
-	<meta name="twitter:image" content="https://assets.collab.land/collabland-logo.png" />
+	<meta name="twitter:image" content="https://i.imgur.com/yolrjmC.png" />
 	<meta name="twitter:player" content="${claimURL}" />
 	<meta name="twitter:player:width" content="480" />
 	<meta name="twitter:player:height" content="480" />

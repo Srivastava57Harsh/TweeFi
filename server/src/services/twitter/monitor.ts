@@ -25,22 +25,23 @@ async function checkMentions(): Promise<void> {
       "Last tweet fetched at:",
       new Date(Number(lastTweetFetchedAt)).toLocaleString()
     );
-    const timeSinceLastFetch = Date.now() - Number(lastTweetFetchedAt);
-    if (Number(lastTweetFetchedAt) > 0 && timeSinceLastFetch < 16 * 60 * 1000) {
-      // keeping 1 minute more as buffer
-      console.log(
-        `🔍 Skipping check for new mentions... [Time since last fetch: ${Math.round(timeSinceLastFetch / 1000)}s]`
-      );
-      return;
-    }
+    // const timeSinceLastFetch = Date.now() - Number(lastTweetFetchedAt);
+    // if (Number(lastTweetFetchedAt) > 0 && timeSinceLastFetch < 16 * 60 * 1000) {
+    //   // keeping 1 minute more as buffer
+    //   console.log(
+    //     `🔍 Skipping check for new mentions... [Time since last fetch: ${Math.round(timeSinceLastFetch / 1000)}s]`
+    //   );
+    //   return;
+    // }
     console.log("\n🔍 Checking for new mentions...");
-    // const query = `to:${process.env.TWITTER_USERNAME} -is:retweet`;
-    // console.log("Query: %s", query);
-    // const maxMentions = 50;
+    const query = `to:${process.env.TWITTER_USERNAME} -is:retweet`;
+    console.log("Query: %s", query);
+    const maxMentions = 5;
+    const scraper = await TwitterService.getInstance().getScraper();
+    for await (const tweet of scraper.getUserTweets(query, maxMentions)) {
+      // const v2Scraper = await TwitterService.getInstance();
 
-    const v2Scraper = await TwitterService.getInstance();
-
-    for await (const tweet of v2Scraper.getMentions()) {
+      // for await (const tweet of v2Scraper.getMentions()) {
       console.log("Fetched:", tweet.id);
       // Skip our own tweets
       if (tweet.username === process.env.TWITTER_USERNAME) {

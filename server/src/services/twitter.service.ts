@@ -90,7 +90,7 @@ export class TwitterService extends BaseService {
         `/users/${this.me?.userId}/mentions?expansions=author_id&tweet.fields=author_id,id,text`,
         {
           params: {
-            max_results: 50,
+            max_results: 5,
           },
         }
       );
