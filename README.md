@@ -8,9 +8,9 @@
 
 ## 🚀 Introduction
 
-TweeFi (@tweefi) is an **AI-powered on-chain agent** that enables **seamless crypto tipping, fair token launches, and DeFi operations—all from within Twitter (X)**.
+TweeFi (@ggus_ha19784) is an **AI-powered on-chain agent** that enables **seamless crypto tipping, fair token launches, and DeFi operations—all from within Twitter (X)**.
 
-With TweeFi, users don't need to **set up wallets, manage private keys, or understand gas fees**. They simply **tag @tweefi and issue natural language commands**, and the bot securely executes transactions on their behalf.
+With TweeFi, users don't need to **set up wallets, manage private keys, or understand gas fees**. They simply **tag @ggus_ha19784 and issue natural language commands**, and the bot securely executes transactions on their behalf.
 
 By leveraging **MPC-based smart accounts, Move Agent Kit, and NLP-powered AI**, TweeFi transforms **social interactions into financial transactions**, making Web3 **accessible to anyone**.
 
@@ -45,12 +45,12 @@ TweeFi makes **on-chain finance invisible yet powerful** by integrating **Lit Pr
 #### ✅ Seamless Tipping
 
 - Users can tip in **APT, stablecoins, or custom tokens** with a simple mention:
-  - `@tweefi tip @alice 5 APT` → Instantly executed on-chain.
+  - `@ggus_ha19784 tip @alice 5 APT` → Instantly executed on-chain.
 
 #### ✅ Instant Token Launches
 
 - Anyone can launch a **fair token** in seconds:
-  - `@tweefi create $MEME 1M supply` → Smart contract deployed.
+  - `@ggus_ha19784 create $MEME 1M supply` → Smart contract deployed.
 
 #### ✅ More On-Chain Use Cases (Roadmap)
 
@@ -78,14 +78,13 @@ TweeFi makes **on-chain finance invisible yet powerful** by integrating **Lit Pr
 - **MPC-Based Smart Accounts** → Secure, gasless transactions.
 - **Move Agent Kit** → AI-powered transaction execution.
 - **Lit Protocol** → Trusted Execution Environment (TEE) for secure key management.
-- **Kana Labs Paymasters** → Gasless, frictionless transactions.
 - **NLP Intent Resolution** → AI understands & executes user commands.
 
 ### How It Works
 
-1. **User Tags @tweefi & Sends a Command**
+1. **User Tags @ggus_ha19784 & Sends a Command**
 
-   - Example: `@tweefi tip @bob 10 APT`
+   - Example: `@ggus_ha19784 tip @bob 10 APT`
 
 2. **TweeFi AI Interprets Intent & Generates Transaction**
 
@@ -182,8 +181,8 @@ pnpm run tunnel
 
 ### 🔹 MVP (Current Release)
 
-- ✅ Twitter Tipping (`@tweefi tip @user X tokens`)
-- ✅ Token Launch (`@tweefi create $TOKEN X supply`)
+- ✅ Twitter Tipping (`@ggus_ha19784 tip @user X tokens`)
+- ✅ Token Launch (`@ggus_ha19784 create $TOKEN X supply`)
 - ✅ Secure MPC Smart Wallets (OAuth2-based)
 
 ### 🔹 Future Development
@@ -209,9 +208,9 @@ Let's make **TweeFi the next big thing in Web3 adoption.**
 
 ## 🔗 Team & Contact
 
-- **Project Name:** TweeFi (@tweefi)
-- **Tech Stack:** Lit Protocol, Move Agent Kit, Kana Labs, NLP, OAuth2
-- **Contact:** [Email](mailto:team@tweefi.xyz) | [Twitter](https://twitter.com/tweefi)
+- **Project Name:** TweeFi (@ggus_ha19784)
+- **Tech Stack:** Lit Protocol, Move Agent Kit, LangChain , NLP, OAuth2, Twitter API
+- **Contact:** [Twitter](https://twitter.com/ggus_ha19784 )
 
 ## 📜 License
 
