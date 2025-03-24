@@ -1,11 +1,11 @@
-// import { scraper } from "./scraper.js";
-// import { SearchMode } from "agent-twitter-client";
+import { scraper } from "./scraper.js";
+import { SearchMode } from "agent-twitter-client";
 import { queueMention } from "../queue/index.js";
 import dotenv from "dotenv";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
 import { CacheService } from "../cache.service.js";
-import { TwitterService } from "../twitter.service.js";
+// import { TwitterService } from "../twitter.service.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -37,10 +37,13 @@ async function checkMentions(): Promise<void> {
     const query = `to:${process.env.TWITTER_USERNAME} -is:retweet`;
     console.log("Query: %s", query);
     const maxMentions = 5;
-    const scraper = await TwitterService.getInstance().getScraper();
-    for await (const tweet of scraper.getUserTweets(query, maxMentions)) {
-      // const v2Scraper = await TwitterService.getInstance();
-
+    // for await (const tweet of scraper.getUserTweets(query, maxMentions)) {
+    // const v2Scraper = await TwitterService.getInstance();
+    for await (const tweet of scraper.searchTweets(
+      query,
+      maxMentions,
+      SearchMode.Latest
+    )) {
       // for await (const tweet of v2Scraper.getMentions()) {
       console.log("Fetched:", tweet.id);
       // Skip our own tweets
@@ -99,6 +102,6 @@ async function checkMentions(): Promise<void> {
 // Export the monitor function
 export const startMentionMonitor = () => {
   console.log("🤖 Starting mention monitor...");
-  // Check every 30 seconds
-  setInterval(checkMentions, 30 * 1000);
+  // Check every 10 seconds
+  setInterval(checkMentions, 10 * 1000);
 };
